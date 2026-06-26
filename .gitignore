@@ -177,6 +177,9 @@ vector-index/embeddings.json
 vector-index/text-embeddings.json
 vector-index/image-embeddings.json
 
+# Prevent accidental check-in of sql.js wasm binaries at repo root
+sql-wasm.wasm
+
 **/embeddings.json
 **/text-embeddings.json
 **/image-embeddings.json
