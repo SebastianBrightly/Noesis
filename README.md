@@ -103,6 +103,8 @@ This plugin integrates with local LLM services but does not include any of their
 
 LM Studio — Proprietary — Local LLM interface
 
+Noesis (νόησις) comes from the verb νοεῖν (noeîn), meaning "to perceive intellectually" or "to think." It denotes the act of understanding or the process of intellectual perception.
+
 
 License
 
