@@ -1,3 +1,5 @@
+<img src="img/noesis.jpg" alt="Noesis Logo" width="384" />
+
 Noesis for Obsidian
 
 Noesis turns your Obsidian vault into something you can have a conversation with.
@@ -69,9 +71,6 @@ Retrieval quality depends on your embedding model and vault structure
 Large vault indexing can take time on first run
 Advanced edit and agent workflows are still under active development
 
-
-
-![Noesis Logo](img/noesis.jpg)
 
 
 Development
