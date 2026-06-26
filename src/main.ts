@@ -10,6 +10,7 @@ import { ReactView, createPluginRoot } from '@/ReactView';
 import React from "react";
 import { SettingsPage } from '@/utils/SettingsPage';
 import { EditorNativeActionsService } from './services/EditorNativeActionsService';
+import { DEFAULT_RESPONSE_NOTE_TEMPLATE } from './utils/TemplateVariableRenderer';
 
 
 
@@ -123,6 +124,8 @@ export interface LocalLLMSettings {
 	// First-run onboarding wizard state
 	hasCompletedFirstRunWizard?: boolean;
 	researchWorkspaceRoot?: string;
+	enableResponseNoteTemplate?: boolean;
+	responseNoteTemplate?: string;
 }
 
 export const DEFAULT_SETTINGS: LocalLLMSettings = {
@@ -185,7 +188,9 @@ export const DEFAULT_SETTINGS: LocalLLMSettings = {
 	selectedPersonality: 'Default',
 	graphRerankAdvancedExpanded: false,
 	hasCompletedFirstRunWizard: false,
-	researchWorkspaceRoot: 'my-research'
+	researchWorkspaceRoot: 'my-research',
+	enableResponseNoteTemplate: true,
+	responseNoteTemplate: DEFAULT_RESPONSE_NOTE_TEMPLATE
 };
 //Should group these as a single object
 const REVIEW_PROMPT_THRESHOLD_MS = 60 * 60 * 1000;
@@ -404,6 +409,16 @@ export default class LocalLLMPlugin extends Plugin {
 
 		if (typeof this.settings.researchWorkspaceRoot !== 'string' || this.settings.researchWorkspaceRoot.trim().length === 0) {
 			this.settings.researchWorkspaceRoot = DEFAULT_SETTINGS.researchWorkspaceRoot;
+			needsMigrationSave = true;
+		}
+
+		if (typeof this.settings.enableResponseNoteTemplate !== 'boolean') {
+			this.settings.enableResponseNoteTemplate = DEFAULT_SETTINGS.enableResponseNoteTemplate;
+			needsMigrationSave = true;
+		}
+
+		if (typeof this.settings.responseNoteTemplate !== 'string' || this.settings.responseNoteTemplate.trim().length === 0) {
+			this.settings.responseNoteTemplate = DEFAULT_SETTINGS.responseNoteTemplate;
 			needsMigrationSave = true;
 		}
 

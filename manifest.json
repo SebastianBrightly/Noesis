@@ -5,6 +5,6 @@
   "minAppVersion": "1.8.10",
   "description": "Ask questions across your notes and get clear, grounded answers. Noesis runs locally on your own LLM by default — your knowledge stays on your machine. External AI connections supported. Built for simplicity, not power users.",
   "author": "Sebastian Brightly",
-  "authorUrl": "https://github.com/SebastianBrightly/",
+  "authorUrl": "https://github.com/sebastianbrightly/",
   "isDesktopOnly": true
 }

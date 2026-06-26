@@ -7,12 +7,23 @@ function toReleaseUrl(repositoryUrl) {
     return null;
   }
 
-  const normalized = repositoryUrl.trim().replace(/^git\+/, '').replace(/\.git$/, '');
-  if (!normalized.startsWith('https://github.com/')) {
-    return null;
+  const raw = repositoryUrl.trim().replace(/^git\+/, '').replace(/\.git$/, '');
+
+  // Handle common SSH format: git@github.com:owner/repo
+  const sshMatch = raw.match(/^git@github\.com:(.+?)\/(.+)$/i);
+  if (sshMatch) {
+    const [, owner, repo] = sshMatch;
+    return `https://github.com/${owner}/${repo}/releases`;
   }
 
-  return `${normalized}/releases`;
+  // Handle HTTPS format: https://github.com/owner/repo
+  const httpsMatch = raw.match(/^https?:\/\/github\.com\/(.+?)\/(.+)$/i);
+  if (httpsMatch) {
+    const [, owner, repo] = httpsMatch;
+    return `https://github.com/${owner}/${repo}/releases`;
+  }
+
+  return null;
 }
 
 // Read current manifest
@@ -64,7 +75,27 @@ console.log('Waiting 60 seconds for GitHub action to create the release...');
 await new Promise(resolve => setTimeout(resolve, 60000));
 
 // Open releases page in browser
-const releaseUrl = 'https://github.com/gabosgab/Noesis/releases';
+let releaseUrl = null;
+
+try {
+  const originUrl = execSync('git config --get remote.origin.url', {
+    encoding: 'utf8',
+  }).trim();
+  releaseUrl = toReleaseUrl(originUrl);
+} catch {
+  // Fall back to package.json repository URL.
+}
+
+if (!releaseUrl) {
+  releaseUrl = toReleaseUrl(repositoryUrl);
+}
+
+if (!releaseUrl) {
+  throw new Error(
+    'Could not determine GitHub releases URL from git remote.origin.url or package.json repository.url'
+  );
+}
+
 console.log(`Opening ${releaseUrl} in browser...`);
 
 // Cross-platform browser opening

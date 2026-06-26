@@ -2,6 +2,7 @@ import { Editor, MarkdownFileInfo, MarkdownView, Menu, Notice, setIcon } from 'o
 import { LoggingUtility } from '../utils/LoggingUtility';
 import type LocalLLMPlugin from '../main';
 import { EditorActionResultModal } from '../views/EditorActionResultModal';
+import { DEFAULT_RESPONSE_NOTE_TEMPLATE, renderTemplateVariables } from '../utils/TemplateVariableRenderer';
 
 type EditorActionId = 'explain' | 'rewrite' | 'summarize' | 'create-tasks' | 'insert-response';
 
@@ -295,20 +296,20 @@ export class EditorNativeActionsService {
 			.split('\n')
 			.map((line) => `> ${line}`)
 			.join('\n');
-
-		const noteBody = [
-			`# Noesis ${action.commandName.replace('Editor: ', '')}`,
-			'',
-			`Source section: ${sourceLink}`,
-			`Generated: ${new Date().toISOString()}`,
-			'',
-			'## Highlighted text',
-			safeSelection,
-			'',
-			'## Response',
+		const template = this.plugin.settings.enableResponseNoteTemplate
+			? (this.plugin.settings.responseNoteTemplate || DEFAULT_RESPONSE_NOTE_TEMPLATE)
+			: DEFAULT_RESPONSE_NOTE_TEMPLATE;
+		const actionTitle = `Noesis ${action.commandName.replace('Editor: ', '')}`;
+		const noteBody = renderTemplateVariables(template, {
+			action_title: actionTitle,
+			source_link: sourceLink,
+			generated_at: new Date().toISOString(),
+			highlighted_text: safeSelection,
 			response,
-			''
-		].join('\n');
+			source_file: sourceFile,
+			source_block_id: blockId,
+			source_excerpt: selection
+		}).trimEnd() + '\n';
 
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 		const baseName = `Noesis ${action.id} ${timestamp}.md`;

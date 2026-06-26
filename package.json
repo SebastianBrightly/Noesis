@@ -23,12 +23,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SebastianBrightly/noesis.git"
+    "url": "https://github.com/sebastianbrightly/noesis.git"
   },
   "bugs": {
-    "url": "https://github.com/SebastianBrightly/noesis/issues"
+    "url": "https://github.com/sebastianbrightly/noesis/issues"
   },
-  "homepage": "https://github.com/SebastianBrightly/noesis#readme",
+  "homepage": "https://github.com/sebastianbrightly/noesis#readme",
   "dependencies": {
     "@webreflection/sql.js": "^0.3.4",
     "crc-32": "^1.2.2",

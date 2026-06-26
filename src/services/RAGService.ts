@@ -8,6 +8,7 @@ import * as CRC32 from 'crc-32';
 import * as path from 'path';
 import { SettingsManager } from './SettingsManager';
 import { LocalLLMSettings } from '../main';
+import { appendStudySignalsForIndexing } from '../utils/StudyMarkupUtils';
 
 
 export interface RAGSearchResult {
@@ -2447,6 +2448,7 @@ export class RAGService {
 	private async updateFileEmbeddings(file: TFile): Promise<void> {
 		try {
 			const content = await this.app.vault.read(file);
+			const contentForIndexing = appendStudySignalsForIndexing(content);
 			const metadata = this.app.metadataCache.getFileCache(file);
 			const title = this.getFileTitle(file, metadata);
 
@@ -2454,7 +2456,7 @@ export class RAGService {
 			const checksum = await this.calculateCRC32(file);
 
 			// Split content into chunks
-			const chunks = this.splitMarkdownIntoAnchoredChunks(content);
+			const chunks = this.splitMarkdownIntoAnchoredChunks(contentForIndexing);
 
 			if (chunks.length === 0) {
 				LoggingUtility.log(`No chunks found in file: ${file.path}`);
@@ -2511,6 +2513,7 @@ export class RAGService {
 	private async updateFileEmbeddingsWithProgress(file: TFile, progressCallback?: (chunkIndex: number, totalChunks: number) => void): Promise<void> {
 		try {
 			const content = await this.app.vault.read(file);
+			const contentForIndexing = appendStudySignalsForIndexing(content);
 			const metadata = this.app.metadataCache.getFileCache(file);
 			const title = this.getFileTitle(file, metadata);
 
@@ -2518,7 +2521,7 @@ export class RAGService {
 			const checksum = await this.calculateCRC32(file);
 
 			// Split content into chunks
-			const chunks = this.splitMarkdownIntoAnchoredChunks(content);
+			const chunks = this.splitMarkdownIntoAnchoredChunks(contentForIndexing);
 
 			if (chunks.length === 0) {
 				LoggingUtility.log(`No chunks found in file: ${file.path}`);

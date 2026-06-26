@@ -11,6 +11,12 @@ import { LoggingUtility
 import { RAGService } from '@/services/RAGService';
 import manifest from 'manifest.json';
 import { useState } from "react";
+import {
+	DEFAULT_RESPONSE_NOTE_TEMPLATE,
+	RESPONSE_NOTE_TEMPLATE_HELP,
+	RESPONSE_TEMPLATE_PRESETS,
+	ResponseTemplatePresetId
+} from '@/utils/TemplateVariableRenderer';
 
 
 
@@ -69,6 +75,7 @@ export class SettingsPage extends PluginSettingTab
 
 		makeTab('LLM Config', (el, s) => this.visualizeSettings_LLMConfig(el, s));
 		makeTab('System Prompt', (el, s) => this.visualizeSettings_SystemPrompt(el, s));
+		makeTab('Templates', (el, s) => this.visualizeSettings_Templates(el, s));
 		// add more tabs as needed:
 		//makeTab('Search', (el, s) => this.visualizeSettings_Search(el, s));
 		makeTab('RAG', (el, s) => this.visualizeSettings_RAG(el, s));
@@ -80,6 +87,82 @@ export class SettingsPage extends PluginSettingTab
 
 
 
+	}
+
+	private visualizeSettings_Templates(containerEl: HTMLElement, LocalLLMSettings: any): void {
+		new Setting(containerEl).setName('Response Templates').setHeading();
+		let templateTextAreaEl: HTMLTextAreaElement | null = null;
+
+		const applyPresetTemplate = async (presetId: ResponseTemplatePresetId): Promise<void> => {
+			const preset = RESPONSE_TEMPLATE_PRESETS[presetId];
+			if (!preset) {
+				return;
+			}
+
+			this.plugin.settings.responseNoteTemplate = preset.template;
+			this.plugin.settings.enableResponseNoteTemplate = true;
+			await this.plugin.saveSettings();
+			if (templateTextAreaEl) {
+				templateTextAreaEl.value = preset.template;
+			}
+			new Notice(`Applied template preset: ${preset.label}`);
+		};
+
+		new Setting(containerEl)
+			.setName('Use response note template')
+			.setDesc('When enabled, saved editor-action notes use a structured template for easier onboarding and cleaner outputs.')
+			.addToggle(toggle => toggle
+				.setValue(!!this.plugin.settings.enableResponseNoteTemplate)
+				.onChange(async (value) => {
+					this.plugin.settings.enableResponseNoteTemplate = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Starter presets')
+			.setDesc('One-click presets for non-technical users. Select a format and start saving responses immediately.')
+			.addButton(button => button
+				.setButtonText('Research Summary')
+				.onClick(async () => {
+					await applyPresetTemplate('research-summary');
+				}))
+			.addButton(button => button
+				.setButtonText('Meeting Notes')
+				.onClick(async () => {
+					await applyPresetTemplate('meeting-notes');
+				}))
+			.addButton(button => button
+				.setButtonText('Journal Reflection')
+				.onClick(async () => {
+					await applyPresetTemplate('journal-reflection');
+				}));
+
+		new Setting(containerEl)
+			.setName('Response note template')
+			.setDesc(`Variables: ${RESPONSE_NOTE_TEMPLATE_HELP}`)
+			.addTextArea(text => {
+				text.setValue(this.plugin.settings.responseNoteTemplate || DEFAULT_RESPONSE_NOTE_TEMPLATE)
+					.setPlaceholder(DEFAULT_RESPONSE_NOTE_TEMPLATE)
+					.onChange(async (value) => {
+						this.plugin.settings.responseNoteTemplate = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.rows = 12;
+				text.inputEl.cols = 60;
+				templateTextAreaEl = text.inputEl;
+			});
+
+		new Setting(containerEl)
+			.setName('Reset response template')
+			.setDesc('Restore the default beginner-friendly template.')
+			.addButton(button => button
+				.setButtonText('Reset template')
+				.onClick(async () => {
+					this.plugin.settings.responseNoteTemplate = DEFAULT_RESPONSE_NOTE_TEMPLATE;
+					await this.plugin.saveSettings();
+					new Notice('Response note template reset to default.');
+					this.display();
+				}));
 	}
 
 	hide(): void {
@@ -1237,7 +1320,7 @@ export class SettingsPage extends PluginSettingTab
 		containerEl.createEl('p', { text: `Noesis version ${manifest.version}` })
 
 		reportButton.addEventListener('click', () => {
-			window.open('https://github.com/SebastianBrightly/noesis/issues/new', '_blank');
+			window.open('https://github.com/sebastianbrightly/noesis/issues/new', '_blank');
 		});
 	}
 
