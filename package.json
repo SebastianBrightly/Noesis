@@ -1,0 +1,53 @@
+{
+  "name": "noesis",
+  "version": "0.1.1",
+  "description": "Noesis is a privacy-first Obsidian plugin that lets you chat with your notes, retrieve grounded answers, and draft content using local or external LLM endpoints.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "version": "node version-bump.mjs",
+    "release": "npm run build && node version-bump.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "local-llm",
+    "chat",
+    "ai",
+    "private"
+  ],
+  "author": "Sebastian Brightly",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SebastianBrightly/noesis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SebastianBrightly/noesis/issues"
+  },
+  "homepage": "https://github.com/SebastianBrightly/noesis#readme",
+  "dependencies": {
+    "@webreflection/sql.js": "^0.3.4",
+    "crc-32": "^1.2.2",
+    "tesseract.js": "^2.1.5",
+    "react-tabs": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.19.1",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.25.5",
+    "jsdom": "^28.1.0",
+    "obsidian": "^1.8.7",
+    "tslib": "^2.8.1",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18",
+    "tesseract.js": "^2.1.5",
+    "react-tabs": "^5.1.0"
+  }
+}
