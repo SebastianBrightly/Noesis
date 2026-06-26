@@ -71,7 +71,7 @@ Advanced edit and agent workflows are still under active development
 
 
 
-Show Image
+![Noesis Logo](img/noesis.jpg)
 
 
 Development
