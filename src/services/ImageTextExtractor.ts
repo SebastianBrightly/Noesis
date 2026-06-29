@@ -1,4 +1,4 @@
-import { TFile, Notice } from 'obsidian';
+import { App, TFile, Notice } from 'obsidian';
 import { LLMService } from './LLMService';
 import { LoggingUtility } from '../utils/LoggingUtility';
 import * as Tesseract from 'tesseract.js';
@@ -21,16 +21,20 @@ export interface VisionModelCapabilities {
 
 export class ImageTextExtractor {
 	private llmService: LLMService;
-	private app: any; // App instance for file operations
+	private app: App; // App instance for file operations
 	private visionCapabilities: VisionModelCapabilities | null = null;
 	private capabilitiesChecked: boolean = false;
 	// Whether to allow local OCR fallback (tesseract) when model lacks vision or the LLM call fails.
 	// This can be toggled by the plugin settings.
 	private enableLocalOCRFallback: boolean = true;
 
-	constructor(llmService: LLMService, app: any) {
+	constructor(llmService: LLMService, app: App) {
 		this.llmService = llmService;
 		this.app = app;
+	}
+
+	private getErrorMessage(error: unknown): string {
+		return error instanceof Error ? error.message : String(error);
 	}
 
 	/**
@@ -133,7 +137,7 @@ export class ImageTextExtractor {
 						return { success: true, extractedText: text };
 					} catch (ocrError) {
 						LoggingUtility.error('Tesseract OCR failed:', ocrError);
-						return { success: false, extractedText: '', error: `OCR fallback failed: ${ocrError.message}` };
+						return { success: false, extractedText: '', error: `OCR fallback failed: ${this.getErrorMessage(ocrError)}` };
 					}
 				} else {
 					return { success: false, extractedText: '', error: 'Model does not support vision and local OCR fallback is disabled' };
@@ -173,12 +177,12 @@ export class ImageTextExtractor {
 					const ocrResult = await Tesseract.recognize(imageData, 'eng');
 					const text = ocrResult?.data?.text?.trim() || '';
 					if (!text) {
-						return { success: false, extractedText: '', error: `Extraction failed: ${llmError.message}` };
+						return { success: false, extractedText: '', error: `Extraction failed: ${this.getErrorMessage(llmError)}` };
 					}
 					return { success: true, extractedText: text };
 				} catch (ocrError) {
 					LoggingUtility.error('Tesseract OCR also failed:', ocrError);
-					return { success: false, extractedText: '', error: `Extraction failed: ${llmError.message}` };
+					return { success: false, extractedText: '', error: `Extraction failed: ${this.getErrorMessage(llmError)}` };
 				}
 			}
 
@@ -187,7 +191,7 @@ export class ImageTextExtractor {
 			return {
 				success: false,
 				extractedText: '',
-				error: `Extraction failed: ${error.message}`,
+				error: `Extraction failed: ${this.getErrorMessage(error)}`,
 				modelCapabilities: this.visionCapabilities || { supportsVision: false }
 			};
 		}
@@ -216,7 +220,7 @@ export class ImageTextExtractor {
 			return `data:${mimeType};base64,${base64}`;
 		} catch (error) {
 			LoggingUtility.error('Error reading image file as base64:', error);
-			throw new Error(`Failed to read image file: ${error.message}`);
+			throw new Error(`Failed to read image file: ${this.getErrorMessage(error)}`);
 		}
 	}
 

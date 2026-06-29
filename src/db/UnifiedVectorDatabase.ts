@@ -4,6 +4,7 @@ import initSqlJs from '@webreflection/sql.js';
 // @ts-ignore
 import sqlWasm from 'sql.js/dist/sql-wasm.wasm';
 import { MigrationRunner } from './MigrationRunner';
+import type { SqliteDatabase, SqliteModule } from './SqliteTypes';
 
 export interface VectorDocument {
 	id: string; // unique id for the paragraph (e.g., "file.md#p1" or "image.png#c1")
@@ -34,7 +35,7 @@ export interface VectorSearchResult {
 }
 
 export class UnifiedVectorDatabase {
-	private db: any | null = null;
+	private db: SqliteDatabase | null = null;
 	private dbPath: string;
 	private app: App;
 	private dimension: number = 0;
@@ -46,6 +47,89 @@ export class UnifiedVectorDatabase {
 	constructor(app: App, dbPath: string) {
 		this.app = app;
 		this.dbPath = dbPath;
+	}
+
+	private toNumber(value: unknown): number | null {
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return value;
+		}
+
+		if (typeof value === 'string' && value.trim().length > 0) {
+			const parsed = Number(value);
+			if (Number.isFinite(parsed)) {
+				return parsed;
+			}
+		}
+
+		return null;
+	}
+
+	private toString(value: unknown): string | null {
+		if (typeof value === 'string') {
+			return value;
+		}
+
+		return null;
+	}
+
+	private parseVector(value: unknown): number[] {
+		const vectorJson = this.toString(value);
+		if (!vectorJson) {
+			return [];
+		}
+
+		try {
+			const parsed = JSON.parse(vectorJson);
+			if (!Array.isArray(parsed)) {
+				return [];
+			}
+
+			const numbers = parsed
+				.map((item) => this.toNumber(item))
+				.filter((item): item is number => item !== null);
+
+			return numbers;
+		} catch {
+			return [];
+		}
+	}
+
+	private mapRowToDocument(row: Record<string, unknown>): VectorDocument | null {
+		const id = this.toString(row.id);
+		const filePath = this.toString(row.file_path);
+		const title = this.toString(row.title);
+		const paragraphText = this.toString(row.paragraph_text);
+		const fileChecksum = this.toString(row.file_checksum);
+		const paragraphIndex = this.toNumber(row.paragraph_index);
+
+		if (!id || !filePath || !title || !paragraphText || !fileChecksum || paragraphIndex === null) {
+			return null;
+		}
+
+		const sourceType = row.source_type === 'image' ? 'image' : 'markdown';
+
+		return {
+			id,
+			vector: this.parseVector(row.vector_json),
+			metadata: {
+				filePath,
+				fileName: this.toString(row.file_name) ?? undefined,
+				title,
+				paragraphIndex,
+				sectionIndex: this.toNumber(row.section_index) ?? undefined,
+				paragraphText,
+				anchorType: (this.toString(row.anchor_type) as 'block' | 'heading' | 'chunk' | null) ?? undefined,
+				anchorValue: this.toString(row.anchor_value) ?? undefined,
+				anchorTarget: this.toString(row.anchor_target) ?? undefined,
+				headingPath: this.toString(row.heading_path) ?? undefined,
+				headingSlug: this.toString(row.heading_slug) ?? undefined,
+				fileChecksum,
+				lastModified: this.toNumber(row.last_modified) ?? undefined,
+				fileSize: this.toNumber(row.file_size) ?? undefined,
+				sourceType,
+				extractedText: this.toNumber(row.extracted_text) === 1
+			}
+		};
 	}
 
 	private sanitizeVaultPath(pathValue: string): string {
@@ -94,7 +178,7 @@ export class UnifiedVectorDatabase {
 			// Load WASM file from imported binary (inlined by esbuild)
 			const SQL = await initSqlJs({
 				wasmBinary: sqlWasm
-			});
+			}) as unknown as SqliteModule;
 
 			// Load database if it exists, otherwise create new
 			let dbFile;
@@ -135,8 +219,9 @@ export class UnifiedVectorDatabase {
 				const stmt = this.db.prepare('SELECT MAX(version) as v FROM schema_versions');
 				if (stmt.step()) {
 					const row = stmt.getAsObject();
-					if (row.v !== null) {
-						currentVersion = Number(row.v);
+					const version = this.toNumber(row.v);
+					if (version !== null) {
+						currentVersion = version;
 					}
 				}
 				stmt.free();
@@ -150,7 +235,8 @@ export class UnifiedVectorDatabase {
 			if (currentVersion === 0) {
 				const tableCheck = this.db.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='documents'");
 				if (tableCheck.step()) {
-					if (tableCheck.getAsObject().count > 0) {
+					const count = this.toNumber(tableCheck.getAsObject().count) ?? 0;
+					if (count > 0) {
 						currentVersion = 1;
 						// Mark as version 1
 						this.db.run('INSERT INTO schema_versions (version, migrated_at) VALUES (?, ?)', [1, Date.now()]);
@@ -176,8 +262,8 @@ export class UnifiedVectorDatabase {
 					dimStmt.bind(['dimension']);
 					if (dimStmt.step()) {
 						const row = dimStmt.getAsObject();
-						const parsed = Number(row.value);
-						if (!Number.isNaN(parsed) && parsed > 0) {
+						const parsed = this.toNumber(row.value);
+						if (parsed !== null && parsed > 0) {
 							this.dimension = parsed;
 							LoggingUtility.log(`Loaded persisted vector dimension: ${this.dimension}`);
 						}
@@ -193,8 +279,8 @@ export class UnifiedVectorDatabase {
 						const docDimStmt = this.db.prepare('SELECT dimension FROM documents LIMIT 1');
 						if (docDimStmt.step()) {
 							const row = docDimStmt.getAsObject();
-							const parsed = Number(row.dimension);
-							if (!Number.isNaN(parsed) && parsed > 0) {
+							const parsed = this.toNumber(row.dimension);
+							if (parsed !== null && parsed > 0) {
 								this.dimension = parsed;
 								LoggingUtility.log(`Inferred vector dimension from existing documents: ${this.dimension}`);
 								// Persist for future loads
@@ -225,6 +311,60 @@ export class UnifiedVectorDatabase {
 			this.db = null;
 			LoggingUtility.log('Closed unified vector database');
 		}
+	}
+
+	isLoaded(): boolean {
+		return this.db !== null;
+	}
+
+	clearDocumentsBySourceType(sourceType: 'markdown' | 'image'): void {
+		if (!this.db) {
+			throw new Error('Database not initialized. Call load() first.');
+		}
+
+		this.db.run('DELETE FROM documents WHERE source_type = ?', [sourceType]);
+	}
+
+	private executeCountQuery(sql: string, params: unknown[] = []): number {
+		if (!this.db) {
+			return 0;
+		}
+
+		const stmt = this.db.prepare(sql);
+		if (params.length > 0) {
+			stmt.bind(params);
+		}
+
+		let count = 0;
+		if (stmt.step()) {
+			count = this.toNumber(stmt.getAsObject().count) ?? 0;
+		}
+		stmt.free();
+
+		return count;
+	}
+
+	getSourceBreakdown(): {
+		markdownDocuments: number;
+		imageDocuments: number;
+		markdownFiles: number;
+		imageFiles: number;
+	} {
+		if (!this.db) {
+			return {
+				markdownDocuments: 0,
+				imageDocuments: 0,
+				markdownFiles: 0,
+				imageFiles: 0
+			};
+		}
+
+		return {
+			markdownDocuments: this.executeCountQuery('SELECT COUNT(*) as count FROM documents WHERE source_type = ?', ['markdown']),
+			imageDocuments: this.executeCountQuery('SELECT COUNT(*) as count FROM documents WHERE source_type = ?', ['image']),
+			markdownFiles: this.executeCountQuery('SELECT COUNT(DISTINCT file_path) as count FROM documents WHERE source_type = ?', ['markdown']),
+			imageFiles: this.executeCountQuery('SELECT COUNT(DISTINCT file_path) as count FROM documents WHERE source_type = ?', ['image'])
+		};
 	}
 
 	/**
@@ -352,7 +492,7 @@ export class UnifiedVectorDatabase {
 
 		// Get all documents
 		const stmt = this.db.prepare('SELECT * FROM documents');
-		const rows: any[] = [];
+		const rows: Array<Record<string, unknown>> = [];
 		while (stmt.step()) {
 			rows.push(stmt.getAsObject());
 		}
@@ -367,33 +507,16 @@ export class UnifiedVectorDatabase {
 		// Calculate similarities
 		const similarities: VectorSearchResult[] = [];
 		for (const row of rows) {
-			const docVector = JSON.parse(row.vector_json) as number[];
+			const docVector = this.parseVector(row.vector_json);
+			const document = this.mapRowToDocument(row);
+			if (!document) {
+				continue;
+			}
+
+			document.vector = docVector;
 			const similarity = this.cosineSimilarity(queryVector, docVector);
 
 			if (similarity >= threshold) {
-				const document: VectorDocument = {
-					id: row.id,
-					vector: docVector,
-					metadata: {
-						filePath: row.file_path,
-						fileName: row.file_name || undefined,
-						title: row.title,
-						paragraphIndex: row.paragraph_index,
-						sectionIndex: row.section_index ?? undefined,
-						paragraphText: row.paragraph_text,
-						anchorType: row.anchor_type || undefined,
-						anchorValue: row.anchor_value || undefined,
-						anchorTarget: row.anchor_target || undefined,
-						headingPath: row.heading_path || undefined,
-						headingSlug: row.heading_slug || undefined,
-						fileChecksum: row.file_checksum,
-						lastModified: row.last_modified || undefined,
-						fileSize: row.file_size || undefined,
-						sourceType: row.source_type,
-						extractedText: row.extracted_text === 1
-					}
-				};
-
 				similarities.push({
 					document,
 					similarity
@@ -524,9 +647,9 @@ export class UnifiedVectorDatabase {
 		}
 
 		return {
-			documentCount: Number(countResult.count),
-			fileCount: Number(fileCountResult.count),
-			lastUpdated: lastUpdatedResult.last_updated ? new Date(lastUpdatedResult.last_updated * 1000) : new Date(),
+			documentCount: this.toNumber(countResult.count) ?? 0,
+			fileCount: this.toNumber(fileCountResult.count) ?? 0,
+			lastUpdated: this.toNumber(lastUpdatedResult.last_updated) ? new Date((this.toNumber(lastUpdatedResult.last_updated) ?? 0) * 1000) : new Date(),
 			sizeInBytes
 		};
 	}
@@ -545,7 +668,7 @@ export class UnifiedVectorDatabase {
 		const result = stmt.getAsObject();
 		stmt.free();
 
-		return result.count > 0;
+		return (this.toNumber(result.count) ?? 0) > 0;
 	}
 
 	/**
@@ -558,34 +681,21 @@ export class UnifiedVectorDatabase {
 
 		const stmt = this.db.prepare('SELECT * FROM documents WHERE file_path = ? ORDER BY paragraph_index');
 		stmt.bind([filePath]);
-		const rows: any[] = [];
+		const rows: Array<Record<string, unknown>> = [];
 		while (stmt.step()) {
 			rows.push(stmt.getAsObject());
 		}
 		stmt.free();
 
-		return rows.map((row: any) => ({
-			id: row.id,
-			vector: JSON.parse(row.vector_json) as number[],
-			metadata: {
-				filePath: row.file_path,
-				fileName: row.file_name || undefined,
-				title: row.title,
-				paragraphIndex: row.paragraph_index,
-				sectionIndex: row.section_index ?? undefined,
-				paragraphText: row.paragraph_text,
-				anchorType: row.anchor_type || undefined,
-				anchorValue: row.anchor_value || undefined,
-				anchorTarget: row.anchor_target || undefined,
-				headingPath: row.heading_path || undefined,
-				headingSlug: row.heading_slug || undefined,
-				fileChecksum: row.file_checksum,
-				lastModified: row.last_modified || undefined,
-				fileSize: row.file_size || undefined,
-				sourceType: row.source_type,
-				extractedText: row.extracted_text === 1
+		const documents: VectorDocument[] = [];
+		for (const row of rows) {
+			const document = this.mapRowToDocument(row);
+			if (document) {
+				documents.push(document);
 			}
-		}));
+		}
+
+		return documents;
 	}
 
 	/**
@@ -597,34 +707,21 @@ export class UnifiedVectorDatabase {
 		}
 
 		const stmt = this.db.prepare('SELECT * FROM documents');
-		const rows: any[] = [];
+		const rows: Array<Record<string, unknown>> = [];
 		while (stmt.step()) {
 			rows.push(stmt.getAsObject());
 		}
 		stmt.free();
 
-		return rows.map((row: any) => ({
-			id: row.id,
-			vector: JSON.parse(row.vector_json) as number[],
-			metadata: {
-				filePath: row.file_path,
-				fileName: row.file_name || undefined,
-				title: row.title,
-				paragraphIndex: row.paragraph_index,
-				sectionIndex: row.section_index ?? undefined,
-				paragraphText: row.paragraph_text,
-				anchorType: row.anchor_type || undefined,
-				anchorValue: row.anchor_value || undefined,
-				anchorTarget: row.anchor_target || undefined,
-				headingPath: row.heading_path || undefined,
-				headingSlug: row.heading_slug || undefined,
-				fileChecksum: row.file_checksum,
-				lastModified: row.last_modified || undefined,
-				fileSize: row.file_size || undefined,
-				sourceType: row.source_type,
-				extractedText: row.extracted_text === 1
+		const documents: VectorDocument[] = [];
+		for (const row of rows) {
+			const document = this.mapRowToDocument(row);
+			if (document) {
+				documents.push(document);
 			}
-		}));
+		}
+
+		return documents;
 	}
 
 	/**
@@ -727,8 +824,9 @@ export class UnifiedVectorDatabase {
 			do {
 				this.saveQueued = false;
 				const data = this.db!.export();
-				const binary = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-				await this.app.vault.adapter.writeBinary(this.dbPath, binary);
+				const binaryCopy = new Uint8Array(data.byteLength);
+				binaryCopy.set(data);
+				await this.app.vault.adapter.writeBinary(this.dbPath, binaryCopy.buffer);
 			} while (this.saveQueued);
 		})();
 

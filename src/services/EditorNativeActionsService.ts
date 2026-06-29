@@ -1,4 +1,4 @@
-import { Editor, MarkdownFileInfo, MarkdownView, Menu, Notice, setIcon } from 'obsidian';
+import { Editor, EventRef, MarkdownFileInfo, MarkdownView, Menu, Notice, setIcon } from 'obsidian';
 import { LoggingUtility } from '../utils/LoggingUtility';
 import type LocalLLMPlugin from '../main';
 import { EditorActionResultModal } from '../views/EditorActionResultModal';
@@ -94,6 +94,10 @@ export class EditorNativeActionsService {
 	constructor(private readonly plugin: LocalLLMPlugin) {}
 
 	register(): void {
+		const workspaceEvents = this.plugin.app.workspace as unknown as {
+			on: (eventName: string, callback: (...args: unknown[]) => void) => EventRef;
+		};
+
 		for (const action of ACTIONS) {
 			this.plugin.addCommand({
 				id: action.commandId,
@@ -113,7 +117,7 @@ export class EditorNativeActionsService {
 		}
 
 		this.plugin.registerEvent(
-			(this.plugin.app.workspace as any).on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
+			workspaceEvents.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
 				if (!this.hasSelection(editor)) {
 					return;
 				}

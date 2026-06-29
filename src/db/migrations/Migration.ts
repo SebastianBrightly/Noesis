@@ -1,4 +1,6 @@
+import type { SqliteDatabase } from '../SqliteTypes';
+
 export interface Migration {
     version: number;
-    up(db: any): Promise<void>;
+    up(db: SqliteDatabase): Promise<void>;
 }

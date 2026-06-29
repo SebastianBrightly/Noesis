@@ -12,6 +12,7 @@ import { SettingsPage } from '@/utils/SettingsPage';
 import { EditorNativeActionsService } from './services/EditorNativeActionsService';
 import { AutoTagService } from './services/AutoTagService';
 import { DEFAULT_RESPONSE_NOTE_TEMPLATE } from './utils/TemplateVariableRenderer';
+import type { LLMService } from './services/LLMService';
 
 
 
@@ -224,7 +225,7 @@ const REVIEW_PROMPT_MESSAGE = 'Enjoying Noesis? A quick review helps others disc
 export default class LocalLLMPlugin extends Plugin {
 	settings: LocalLLMSettings;
 	ragService: RAGService; 
-	public llmService: any; // LLMService instance for image processing
+	public llmService: LLMService; // LLMService instance for image processing
 	private usageTrackingIntervalId: number | null = null;
 	private reviewPromptPending = false;
 	private persistentLogFilePath: string | null = null;
@@ -446,10 +447,12 @@ export default class LocalLLMPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 		let needsMigrationSave = false;
 
-		const normalizeConnectionConfig = (raw: any): AIConnectionConfig | null => {
+		const normalizeConnectionConfig = (raw: unknown): AIConnectionConfig | null => {
 			if (!raw || typeof raw !== 'object') {
 				return null;
 			}
+
+			const rawConfig = raw as Record<string, unknown>;
 
 			const validContextModes: ContextMode[] = [
 				ContextMode.CURRENT_NOTE,
@@ -463,42 +466,42 @@ export default class LocalLLMPlugin extends Plugin {
 				ContextMode.NONE
 			];
 
-			const id = typeof raw.id === 'string' && raw.id.trim().length > 0
-				? raw.id.trim()
+			const id = typeof rawConfig.id === 'string' && rawConfig.id.trim().length > 0
+				? rawConfig.id.trim()
 				: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-			const name = typeof raw.name === 'string' && raw.name.trim().length > 0
-				? raw.name.trim()
+			const name = typeof rawConfig.name === 'string' && rawConfig.name.trim().length > 0
+				? rawConfig.name.trim()
 				: 'External Connection';
 
-			const contextMode = validContextModes.includes(raw.contextMode)
-				? raw.contextMode as ContextMode
+			const contextMode = validContextModes.includes(rawConfig.contextMode as ContextMode)
+				? rawConfig.contextMode as ContextMode
 				: this.settings.contextMode;
 
-			const apiEndpoint = typeof raw.apiEndpoint === 'string' && raw.apiEndpoint.trim().length > 0
-				? raw.apiEndpoint.trim()
+			const apiEndpoint = typeof rawConfig.apiEndpoint === 'string' && rawConfig.apiEndpoint.trim().length > 0
+				? rawConfig.apiEndpoint.trim()
 				: this.settings.apiEndpoint;
 
-			const maxTokens = Number.isFinite(raw.maxTokens)
-				? Number(raw.maxTokens)
+			const maxTokens = Number.isFinite(rawConfig.maxTokens)
+				? Number(rawConfig.maxTokens)
 				: this.settings.maxTokens;
 
-			const temperature = Number.isFinite(raw.temperature)
-				? Number(raw.temperature)
+			const temperature = Number.isFinite(rawConfig.temperature)
+				? Number(rawConfig.temperature)
 				: this.settings.temperature;
 
-			const apiKey = typeof raw.apiKey === 'string' && raw.apiKey.trim().length > 0
-				? raw.apiKey.trim()
+			const apiKey = typeof rawConfig.apiKey === 'string' && rawConfig.apiKey.trim().length > 0
+				? rawConfig.apiKey.trim()
 				: undefined;
 
-			const model = typeof raw.model === 'string' && raw.model.trim().length > 0
-				? raw.model.trim()
+			const model = typeof rawConfig.model === 'string' && rawConfig.model.trim().length > 0
+				? rawConfig.model.trim()
 				: undefined;
 
 			return {
 				id,
 				name,
-				isSleeping: Boolean(raw.isSleeping),
+				isSleeping: Boolean(rawConfig.isSleeping),
 				contextMode,
 				apiEndpoint,
 				apiKey,
@@ -534,7 +537,7 @@ export default class LocalLLMPlugin extends Plugin {
 		}
 
 		if (!Array.isArray(this.settings.autoTagDictionary)) {
-			const rawDictionary = (this.settings as any).autoTagDictionary;
+			const rawDictionary = (this.settings as unknown as Record<string, unknown>).autoTagDictionary;
 			if (typeof rawDictionary === 'string') {
 				this.settings.autoTagDictionary = rawDictionary
 					.split('\n')
@@ -551,13 +554,13 @@ export default class LocalLLMPlugin extends Plugin {
 			needsMigrationSave = true;
 		}
 
-		const rawConnections = (this.settings as any).multiAIConnections;
+		const rawConnections = (this.settings as unknown as Record<string, unknown>).multiAIConnections;
 		if (!Array.isArray(rawConnections)) {
 			this.settings.multiAIConnections = [];
 			needsMigrationSave = true;
 		} else {
 			const normalizedConnections = rawConnections
-				.map((conn: any) => normalizeConnectionConfig(conn))
+				.map((conn: unknown) => normalizeConnectionConfig(conn))
 				.filter((conn: AIConnectionConfig | null): conn is AIConnectionConfig => conn !== null);
 
 			if (JSON.stringify(normalizedConnections) !== JSON.stringify(rawConnections)) {
@@ -589,7 +592,7 @@ export default class LocalLLMPlugin extends Plugin {
 
 		// Migrate personalityNames to array if saved as a string or missing
 		if (!Array.isArray(this.settings.personalityNames)) {
-			const raw = (this.settings as any).personalityNames;
+			const raw = (this.settings as unknown as Record<string, unknown>).personalityNames;
 			if (typeof raw === 'string') {
 				this.settings.personalityNames = raw.split('\n').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
 			} else {

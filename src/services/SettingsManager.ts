@@ -47,36 +47,38 @@ export class SettingsManager {
 				ContextMode.SEARCH,
 				ContextMode.NONE
 			];
-			const normalizeConnectionConfig = (raw: any) => {
+			const normalizeConnectionConfig = (raw: unknown) => {
 				if (!raw || typeof raw !== 'object') {
 					return null;
 				}
 
+				const rawConfig = raw as Record<string, unknown>;
+
 				return {
-					id: typeof raw.id === 'string' && raw.id.trim().length > 0
-						? raw.id.trim()
+					id: typeof rawConfig.id === 'string' && rawConfig.id.trim().length > 0
+						? rawConfig.id.trim()
 						: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-					name: typeof raw.name === 'string' && raw.name.trim().length > 0
-						? raw.name.trim()
+					name: typeof rawConfig.name === 'string' && rawConfig.name.trim().length > 0
+						? rawConfig.name.trim()
 						: 'External Connection',
-					isSleeping: Boolean(raw.isSleeping),
-					contextMode: validContextModes.includes(raw.contextMode)
-						? raw.contextMode
+					isSleeping: Boolean(rawConfig.isSleeping),
+					contextMode: validContextModes.includes(rawConfig.contextMode as ContextMode)
+						? rawConfig.contextMode as ContextMode
 						: this.settings.contextMode,
-					apiEndpoint: typeof raw.apiEndpoint === 'string' && raw.apiEndpoint.trim().length > 0
-						? raw.apiEndpoint.trim()
+					apiEndpoint: typeof rawConfig.apiEndpoint === 'string' && rawConfig.apiEndpoint.trim().length > 0
+						? rawConfig.apiEndpoint.trim()
 						: this.settings.apiEndpoint,
-					apiKey: typeof raw.apiKey === 'string' && raw.apiKey.trim().length > 0
-						? raw.apiKey.trim()
+					apiKey: typeof rawConfig.apiKey === 'string' && rawConfig.apiKey.trim().length > 0
+						? rawConfig.apiKey.trim()
 						: undefined,
-					model: typeof raw.model === 'string' && raw.model.trim().length > 0
-						? raw.model.trim()
+					model: typeof rawConfig.model === 'string' && rawConfig.model.trim().length > 0
+						? rawConfig.model.trim()
 						: undefined,
-					maxTokens: Number.isFinite(raw.maxTokens)
-						? Number(raw.maxTokens)
+					maxTokens: Number.isFinite(rawConfig.maxTokens)
+						? Number(rawConfig.maxTokens)
 						: this.settings.maxTokens,
-					temperature: Number.isFinite(raw.temperature)
-						? Number(raw.temperature)
+					temperature: Number.isFinite(rawConfig.temperature)
+						? Number(rawConfig.temperature)
 						: this.settings.temperature
 				};
 			};
@@ -98,8 +100,9 @@ export class SettingsManager {
 			}
 			// Ensure personalityNames is an array (migrate from older string or other formats)
 			if (!Array.isArray(this.settings.personalityNames)) {
-				if (typeof (this.settings as any).personalityNames === 'string') {
-					this.settings.personalityNames = (this.settings as any).personalityNames
+				const rawPersonalityNames = (this.settings as unknown as Record<string, unknown>).personalityNames;
+				if (typeof rawPersonalityNames === 'string') {
+					this.settings.personalityNames = rawPersonalityNames
 						.split('\n')
 						.map((s: string) => s.trim())
 						.filter((s: string) => s.length > 0);
@@ -110,12 +113,13 @@ export class SettingsManager {
 			if (!Array.isArray(this.settings.storedPersonalitySystemPrompt)) {
 				this.settings.storedPersonalitySystemPrompt = DEFAULT_SETTINGS.storedPersonalitySystemPrompt;
 			}
-			if (!Array.isArray((this.settings as any).multiAIConnections)) {
+			const rawConnections = (this.settings as unknown as Record<string, unknown>).multiAIConnections;
+			if (!Array.isArray(rawConnections)) {
 				this.settings.multiAIConnections = DEFAULT_SETTINGS.multiAIConnections;
 			} else {
-				this.settings.multiAIConnections = (this.settings as any).multiAIConnections
-					.map((entry: any) => normalizeConnectionConfig(entry))
-					.filter((entry: any) => entry !== null);
+				this.settings.multiAIConnections = rawConnections
+					.map((entry: unknown) => normalizeConnectionConfig(entry))
+					.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 			}
 
 			if (typeof this.settings.activeAIConnectionId !== 'string' || this.settings.activeAIConnectionId.trim().length === 0) {

@@ -1,4 +1,4 @@
-import { App, MarkdownView, Menu, Modal, Notice, TAbstractFile, TFile, TFolder } from 'obsidian';
+import { App, EventRef, MarkdownView, Menu, Modal, Notice, TAbstractFile, TFile, TFolder } from 'obsidian';
 import type LocalLLMPlugin from '../main';
 import type { AIConnectionConfig } from '../main';
 import { createLLMService, type LLMService } from './LLMService';
@@ -246,6 +246,10 @@ export class AutoTagService {
 	constructor(private readonly plugin: LocalLLMPlugin) {}
 
 	register(): void {
+		const workspaceEvents = this.plugin.app.workspace as unknown as {
+			on: (eventName: string, callback: (...args: unknown[]) => void) => EventRef;
+		};
+
 		this.plugin.addCommand({
 			id: 'auto-tag-active-folder',
 			name: 'Auto tag active folder',
@@ -281,7 +285,7 @@ export class AutoTagService {
 		});
 
 		this.plugin.registerEvent(
-			(this.plugin.app.workspace as any).on('file-menu', (menu: Menu, file: TAbstractFile) => {
+			workspaceEvents.on('file-menu', (menu: Menu, file: TAbstractFile) => {
 				if (file instanceof TFolder) {
 					menu.addSeparator();
 					menu.addItem((item) => {
@@ -312,7 +316,7 @@ export class AutoTagService {
 		);
 
 		this.plugin.registerEvent(
-			(this.plugin.app.workspace as any).on('editor-menu', (menu: Menu, _editor: unknown, view: MarkdownView) => {
+			workspaceEvents.on('editor-menu', (menu: Menu, _editor: unknown, view: MarkdownView) => {
 				const file = view?.file;
 				if (!(file instanceof TFile) || file.extension.toLowerCase() !== 'md') {
 					return;

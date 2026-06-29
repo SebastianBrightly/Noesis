@@ -613,7 +613,7 @@ export class EmbeddingService {
 		this.runtimeLimitsChecked = false;
 		this.runtimeLimitCheckPromise = undefined;
 		// Mask apiKey in logs
-		const safeConfig = { ...config } as any;
+		const safeConfig: EmbeddingConfig = { ...config };
 		if (safeConfig.apiKey) safeConfig.apiKey = '[REDACTED]';
 		LoggingUtility.log('Updated embedding service config:', {
 			endpoint: safeConfig.endpoint,

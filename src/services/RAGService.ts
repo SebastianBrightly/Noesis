@@ -4,6 +4,7 @@ import { LoggingUtility } from '../utils/LoggingUtility';
 import { SearchResult } from './SearchService';
 import { EmbeddingService, EmbeddingConfig } from './EmbeddingService';
 import { ImageTextExtractor } from './ImageTextExtractor';
+import type { LLMService } from './LLMService';
 import * as CRC32 from 'crc-32';
 import { SettingsManager } from './SettingsManager';
 import { LocalLLMSettings } from '../main';
@@ -145,6 +146,14 @@ export class RAGService {
 			.toLowerCase();
 	}
 
+	private getErrorMessage(error: unknown): string {
+		return error instanceof Error ? error.message : String(error);
+	}
+
+	private isLmStudioConnectionError(error: unknown): boolean {
+		return this.getErrorMessage(error).includes('Could not establish connection to LM Studio');
+	}
+
 	private wildcardToRegExp(pattern: string): RegExp {
 		const escaped = pattern
 			.replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -276,7 +285,7 @@ export class RAGService {
 	 * Accepts optional plugin settings so the extractor can be configured
 	 * (for example enabling/disabling local OCR fallback).
 	 */
-	initializeImageTextExtractor(llmService: any, pluginSettings?: LocalLLMSettings): void {
+	initializeImageTextExtractor(llmService: LLMService, pluginSettings?: LocalLLMSettings): void {
 		try {
 			LoggingUtility.log('Initializing image text extractor...');
 			this.imageTextExtractor = new ImageTextExtractor(llmService, this.app);
@@ -592,10 +601,10 @@ export class RAGService {
 				LoggingUtility.error(`Background maintenance (${operation}) failed:`, error);
 				if (!this.initOptions.silentMode) {
 					// Check if it's a connection error and show appropriate message
-					if (error.message && error.message.includes('Could not establish connection to LM Studio')) {
+					if (this.isLmStudioConnectionError(error)) {
 						new Notice(`RAG database ${operation} failed: Cannot connect to LM Studio. Please ensure LM Studio is running with an embedding model loaded.`, 10000);
 					} else {
-						new Notice(`RAG database ${operation} failed: ${error.message}`, 8000);
+						new Notice(`RAG database ${operation} failed: ${this.getErrorMessage(error)}`, 8000);
 					}
 				}
 			}
@@ -1953,10 +1962,10 @@ export class RAGService {
 		} catch (error) {
 			LoggingUtility.error('Error during indexing:', error);
 			// Check if it's a connection error and show appropriate message
-			if (error.message && error.message.includes('Could not establish connection to LM Studio')) {
+			if (this.isLmStudioConnectionError(error)) {
 				new Notice('RAG indexing failed: Cannot connect to LM Studio. Please ensure LM Studio is running with an embedding model loaded.', 10000);
 			} else {
-				new Notice('Error during RAG indexing: ' + error.message, 8000);
+				new Notice('Error during RAG indexing: ' + this.getErrorMessage(error), 8000);
 			}
 		} finally {
 			this.clearEmbeddingPauseState();
@@ -2223,10 +2232,10 @@ export class RAGService {
 		} catch (error) {
 			LoggingUtility.error('Error during complete rebuild:', error);
 			// Check if it's a connection error and show appropriate message
-			if (error.message && error.message.includes('Could not establish connection to LM Studio')) {
+			if (this.isLmStudioConnectionError(error)) {
 				new Notice('RAG complete rebuild failed: Cannot connect to LM Studio. Please ensure LM Studio is running with an embedding model loaded.', 10000);
 			} else {
-				new Notice('Error during RAG complete rebuild: ' + error.message, 8000);
+				new Notice('Error during RAG complete rebuild: ' + this.getErrorMessage(error), 8000);
 			}
 		} finally {
 			this.clearEmbeddingPauseState();
@@ -2260,9 +2269,8 @@ export class RAGService {
 
 			// Clear existing markdown documents, but preserve image documents for checksum checking
 			// We'll delete only markdown documents to preserve image checksums
-			const db = (this.vectorDB as any).db;
-			if (db) {
-				db.prepare('DELETE FROM documents WHERE source_type = ?').run('markdown');
+			if (this.vectorDB.isLoaded()) {
+				this.vectorDB.clearDocumentsBySourceType('markdown');
 				LoggingUtility.log('Cleared markdown documents for rebuild, preserving image documents for checksum checking');
 			}
 
@@ -2431,10 +2439,10 @@ export class RAGService {
 		} catch (error) {
 			LoggingUtility.error('Error during complete rebuild:', error);
 			// Check if it's a connection error and show appropriate message
-			if (error.message && error.message.includes('Could not establish connection to LM Studio')) {
+			if (this.isLmStudioConnectionError(error)) {
 				new Notice('RAG complete rebuild failed: Cannot connect to LM Studio. Please ensure LM Studio is running with an embedding model loaded.', 10000);
 			} else {
-				new Notice('Error during RAG complete rebuild: ' + error.message, 8000);
+				new Notice('Error during RAG complete rebuild: ' + this.getErrorMessage(error), 8000);
 			}
 		} finally {
 			this.clearEmbeddingPauseState();
@@ -2814,8 +2822,7 @@ export class RAGService {
 		markdownFiles: number;
 		imageFiles: number;
 	} {
-		const db = (this.vectorDB as any)?.db;
-		if (!db) {
+		if (!this.vectorDB.isLoaded()) {
 			return this.createEmptyStats();
 		}
 
@@ -2827,39 +2834,17 @@ export class RAGService {
 			return this.createEmptyStats();
 		}
 
-		// Get breakdown by source type
-		if (!this.vectorDB) {
-			return this.createEmptyStats();
-		}
-
-		// Get counts by source type from database
-		if (!db) {
-			return {
-				documentCount: stats.documentCount,
-				fileCount: stats.fileCount,
-				lastUpdated: stats.lastUpdated,
-				sizeInBytes: stats.sizeInBytes,
-				markdownDocuments: 0,
-				imageDocuments: 0,
-				markdownFiles: 0,
-				imageFiles: 0
-			};
-		}
-
-		const markdownCount = db.prepare('SELECT COUNT(*) as count FROM documents WHERE source_type = ?').get('markdown') as { count: number };
-		const imageCount = db.prepare('SELECT COUNT(*) as count FROM documents WHERE source_type = ?').get('image') as { count: number };
-		const markdownFileCount = db.prepare('SELECT COUNT(DISTINCT file_path) as count FROM documents WHERE source_type = ?').get('markdown') as { count: number };
-		const imageFileCount = db.prepare('SELECT COUNT(DISTINCT file_path) as count FROM documents WHERE source_type = ?').get('image') as { count: number };
+		const breakdown = this.vectorDB.getSourceBreakdown();
 
 		return {
 			documentCount: stats.documentCount,
 			fileCount: stats.fileCount,
 			lastUpdated: stats.lastUpdated,
 			sizeInBytes: stats.sizeInBytes,
-			markdownDocuments: markdownCount.count,
-			imageDocuments: imageCount.count,
-			markdownFiles: markdownFileCount.count,
-			imageFiles: imageFileCount.count
+			markdownDocuments: breakdown.markdownDocuments,
+			imageDocuments: breakdown.imageDocuments,
+			markdownFiles: breakdown.markdownFiles,
+			imageFiles: breakdown.imageFiles
 		};
 	}
 
@@ -2913,29 +2898,24 @@ export class RAGService {
 		totalFiles: number;
 	} {
 		const stats = this.getStats();
-		const isInitialized = !!(this.vectorDB as any)?.db;
+		const isInitialized = this.vectorDB.isLoaded();
 
 		// Get breakdown by source type
-		const db = (this.vectorDB as any).db;
+		const breakdown = this.vectorDB.getSourceBreakdown();
 		let textStats = { documentCount: 0, fileCount: 0, lastUpdated: stats.lastUpdated, sizeInBytes: 0 };
 		let imageStats = { documentCount: 0, fileCount: 0, lastUpdated: stats.lastUpdated, sizeInBytes: 0 };
 
-		if (db) {
-			const markdownCount = db.prepare('SELECT COUNT(*) as count FROM documents WHERE source_type = ?').get('markdown') as { count: number };
-			const imageCount = db.prepare('SELECT COUNT(*) as count FROM documents WHERE source_type = ?').get('image') as { count: number };
-			const markdownFileCount = db.prepare('SELECT COUNT(DISTINCT file_path) as count FROM documents WHERE source_type = ?').get('markdown') as { count: number };
-			const imageFileCount = db.prepare('SELECT COUNT(DISTINCT file_path) as count FROM documents WHERE source_type = ?').get('image') as { count: number };
-
+		if (isInitialized) {
 			textStats = {
-				documentCount: markdownCount.count,
-				fileCount: markdownFileCount.count,
+				documentCount: breakdown.markdownDocuments,
+				fileCount: breakdown.markdownFiles,
 				lastUpdated: stats.lastUpdated,
 				sizeInBytes: 0 // Size breakdown not easily available
 			};
 
 			imageStats = {
-				documentCount: imageCount.count,
-				fileCount: imageFileCount.count,
+				documentCount: breakdown.imageDocuments,
+				fileCount: breakdown.imageFiles,
 				lastUpdated: stats.lastUpdated,
 				sizeInBytes: 0 // Size breakdown not easily available
 			};

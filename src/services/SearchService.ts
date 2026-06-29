@@ -114,10 +114,10 @@ export class SearchService {
 			return activeViewFile;
 		}
 
-		const activeLeaf = (this.app.workspace as any).activeLeaf;
-		const activeLeafView = activeLeaf?.view;
+		const activeLeaf = (this.app.workspace as unknown as { activeLeaf?: { view?: unknown } }).activeLeaf;
+		const activeLeafView = activeLeaf?.view as { getViewType?: () => string; file?: TFile } | undefined;
 		if (activeLeafView?.getViewType?.() === 'markdown') {
-			const activeLeafFile = activeLeafView.file as TFile | undefined;
+			const activeLeafFile = activeLeafView.file;
 			if (activeLeafFile && activeLeafFile.extension === 'md') {
 				return activeLeafFile;
 			}
