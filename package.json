@@ -1,6 +1,6 @@
 {
   "name": "noesis",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Noesis is a privacy-first Obsidian plugin that lets you chat with your notes, retrieve grounded answers, and draft content using local or external LLM endpoints.",
   "main": "main.js",
   "scripts": {
