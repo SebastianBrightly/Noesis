@@ -11,6 +11,13 @@ Ask a question, get an answer drawn from your actual notes — not a guess. Runs
 ✅ No external transmission, analytics, or tracking
 ✅ Use local LLMs: Qwen3, Gemma, DeepSeek, Mistral, and more
 
+Network and Privacy Disclosure
+
+- By default, Noesis is local-first and can run entirely with a local model endpoint (for example LM Studio on localhost).
+- Noesis does not include client-side telemetry, analytics SDKs, ad networks, or a self-update mechanism.
+- If you configure an external provider endpoint, your prompts and selected note context are sent only to that endpoint to fulfill your request.
+- External endpoints are user-configured and user-managed. Noesis does not operate or proxy external AI services.
+
 
 
 Example Queries
