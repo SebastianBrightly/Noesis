@@ -47,6 +47,12 @@ const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 packageJson.version = newVersion;
 fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
 
+// Keep npm lockfile synchronized so CI `npm ci` works on the release tag.
+const lockfilePath = path.join(process.cwd(), 'package-lock.json');
+if (fs.existsSync(lockfilePath)) {
+  execSync('npm install --package-lock-only', { stdio: 'inherit' });
+}
+
 const repositoryUrl = packageJson.repository?.url;
 if (
   typeof repositoryUrl !== 'string' ||
@@ -59,7 +65,11 @@ if (
 }
 
 console.log(`Version bumped from ${currentVersion} to ${newVersion}`);
-execSync(`git add manifest.json package.json`, { stdio: 'inherit' });
+if (fs.existsSync(lockfilePath)) {
+  execSync(`git add manifest.json package.json package-lock.json`, { stdio: 'inherit' });
+} else {
+  execSync(`git add manifest.json package.json`, { stdio: 'inherit' });
+}
 execSync(`git commit -m "Bump version to ${newVersion}"`, { stdio: 'inherit' });
 
 // Git tag and push
