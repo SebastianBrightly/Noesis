@@ -133,6 +133,25 @@ export class SettingsManager {
 			if (this.settings.autoTagConnectionId && !(this.settings.multiAIConnections || []).some(conn => conn.id === this.settings.autoTagConnectionId && !conn.isSleeping)) {
 				this.settings.autoTagConnectionId = DEFAULT_SETTINGS.autoTagConnectionId;
 			}
+
+			// Migrate legacy graph reranking defaults to semantics-first additive defaults.
+			// Only adjust when values exactly match the previous default profile.
+			const usesLegacyGraphDefaults =
+				this.settings.graphWeightSemantic === 0.7 &&
+				this.settings.graphWeightBacklinkDistance === 0.12 &&
+				this.settings.graphWeightRecency === 0.08 &&
+				this.settings.graphWeightBookmarked === 0.06 &&
+				this.settings.graphWeightFolderProximity === 0.04 &&
+				this.settings.graphRecencyHalfLifeDays === 14;
+
+			if (usesLegacyGraphDefaults) {
+				this.settings.graphWeightSemantic = DEFAULT_SETTINGS.graphWeightSemantic;
+				this.settings.graphWeightBacklinkDistance = DEFAULT_SETTINGS.graphWeightBacklinkDistance;
+				this.settings.graphWeightRecency = DEFAULT_SETTINGS.graphWeightRecency;
+				this.settings.graphWeightBookmarked = DEFAULT_SETTINGS.graphWeightBookmarked;
+				this.settings.graphWeightFolderProximity = DEFAULT_SETTINGS.graphWeightFolderProximity;
+				this.settings.graphRecencyHalfLifeDays = DEFAULT_SETTINGS.graphRecencyHalfLifeDays;
+			}
 			LoggingUtility.log('Settings loaded:', this.settings);
 		} catch (error) {
 			LoggingUtility.error('Failed to load settings:', error);

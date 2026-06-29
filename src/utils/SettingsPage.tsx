@@ -1275,8 +1275,8 @@ export class SettingsPage extends PluginSettingTab
 
 		addStyledSlider(
 			new Setting(graphAdvancedContainer)
-				.setName('Semantic weight')
-				.setDesc('Weight for embedding similarity in final ranking.'),
+				.setName('Semantic bonus cap')
+				.setDesc('Maximum additive boost from non-semantic signals after semantic similarity is computed.'),
 			{
 				min: 0, max: 1, step: 0.01, value: this.plugin.settings.graphWeightSemantic,
 				onChange: async (value) => {
@@ -1290,7 +1290,7 @@ export class SettingsPage extends PluginSettingTab
 		addStyledSlider(
 			new Setting(graphAdvancedContainer)
 				.setName('Backlink distance weight')
-				.setDesc('Boost notes that are graph-close to the active note.'),
+				.setDesc('Relative share of additive bonus for notes that are graph-close to the active note.'),
 			{
 				min: 0, max: 1, step: 0.01, value: this.plugin.settings.graphWeightBacklinkDistance,
 				onChange: async (value) => {
@@ -1304,7 +1304,7 @@ export class SettingsPage extends PluginSettingTab
 		addStyledSlider(
 			new Setting(graphAdvancedContainer)
 				.setName('Recency weight')
-				.setDesc('Boost recently modified notes.'),
+				.setDesc('Relative share of additive bonus for recently modified notes.'),
 			{
 				min: 0, max: 1, step: 0.01, value: this.plugin.settings.graphWeightRecency,
 				onChange: async (value) => {
@@ -1318,7 +1318,7 @@ export class SettingsPage extends PluginSettingTab
 		addStyledSlider(
 			new Setting(graphAdvancedContainer)
 				.setName('Bookmarked weight')
-				.setDesc('Boost notes that are bookmarked/starred in Obsidian.'),
+				.setDesc('Relative share of additive bonus for notes that are bookmarked/starred in Obsidian.'),
 			{
 				min: 0, max: 1, step: 0.01, value: this.plugin.settings.graphWeightBookmarked,
 				onChange: async (value) => {
@@ -1332,7 +1332,7 @@ export class SettingsPage extends PluginSettingTab
 		addStyledSlider(
 			new Setting(graphAdvancedContainer)
 				.setName('Same-folder weight')
-				.setDesc('Boost notes that share folder hierarchy with the active note.'),
+				.setDesc('Relative share of additive bonus for notes sharing folder hierarchy with the active note.'),
 			{
 				min: 0, max: 1, step: 0.01, value: this.plugin.settings.graphWeightFolderProximity,
 				onChange: async (value) => {

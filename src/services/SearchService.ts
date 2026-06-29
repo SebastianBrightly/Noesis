@@ -62,12 +62,12 @@ interface CandidateFile {
 export class SearchService {
 	private app: App;
 	private ragService: RAGService | null = null;
-	private readonly defaultGraphWeightSemantic = 0.7;
-	private readonly defaultGraphWeightBacklinkDistance = 0.12;
-	private readonly defaultGraphWeightRecency = 0.08;
-	private readonly defaultGraphWeightBookmarked = 0.06;
-	private readonly defaultGraphWeightFolderProximity = 0.04;
-	private readonly defaultRecencyHalfLifeDays = 14;
+	private readonly defaultGraphWeightSemantic = 0.2;
+	private readonly defaultGraphWeightBacklinkDistance = 0.45;
+	private readonly defaultGraphWeightRecency = 0.25;
+	private readonly defaultGraphWeightBookmarked = 0.2;
+	private readonly defaultGraphWeightFolderProximity = 0.1;
+	private readonly defaultRecencyHalfLifeDays = 21;
 	private readonly getGraphSettings?: () => GraphRerankSettings;
 
 	constructor(app: App, ragService?: RAGService, getGraphSettings?: () => GraphRerankSettings) {
@@ -428,24 +428,26 @@ export class SearchService {
 		}
 
 		const resolvedSettings = this.resolveGraphRerankSettings();
-		const rawWeights = {
-			semantic: Math.max(0, resolvedSettings.graphWeightSemantic),
+		const semanticBonusCap = Math.max(0, Math.min(1, resolvedSettings.graphWeightSemantic));
+		const rawNonSemanticWeights = {
 			backlinkDistance: Math.max(0, resolvedSettings.graphWeightBacklinkDistance),
 			recency: Math.max(0, resolvedSettings.graphWeightRecency),
 			bookmarked: Math.max(0, resolvedSettings.graphWeightBookmarked),
 			folder: Math.max(0, resolvedSettings.graphWeightFolderProximity)
 		};
-		const rawWeightSum = rawWeights.semantic + rawWeights.backlinkDistance + rawWeights.recency + rawWeights.bookmarked + rawWeights.folder;
-		const normalizedWeights = rawWeightSum > 0
+		const rawNonSemanticWeightSum =
+			rawNonSemanticWeights.backlinkDistance +
+			rawNonSemanticWeights.recency +
+			rawNonSemanticWeights.bookmarked +
+			rawNonSemanticWeights.folder;
+		const normalizedNonSemanticWeights = rawNonSemanticWeightSum > 0
 			? {
-				semantic: rawWeights.semantic / rawWeightSum,
-				backlinkDistance: rawWeights.backlinkDistance / rawWeightSum,
-				recency: rawWeights.recency / rawWeightSum,
-				bookmarked: rawWeights.bookmarked / rawWeightSum,
-				folder: rawWeights.folder / rawWeightSum
+				backlinkDistance: rawNonSemanticWeights.backlinkDistance / rawNonSemanticWeightSum,
+				recency: rawNonSemanticWeights.recency / rawNonSemanticWeightSum,
+				bookmarked: rawNonSemanticWeights.bookmarked / rawNonSemanticWeightSum,
+				folder: rawNonSemanticWeights.folder / rawNonSemanticWeightSum
 			}
 			: {
-				semantic: this.defaultGraphWeightSemantic,
 				backlinkDistance: this.defaultGraphWeightBacklinkDistance,
 				recency: this.defaultGraphWeightRecency,
 				bookmarked: this.defaultGraphWeightBookmarked,
@@ -470,12 +472,13 @@ export class SearchService {
 			const bookmarkedScore = bookmarkedPaths.has(result.path) ? 1 : 0;
 			const folderScore = this.calculateFolderProximity(activeFile, result.file);
 
-			const rawWeightedScore =
-				(normalizedWeights.semantic * semantic) +
-				(normalizedWeights.backlinkDistance * backlinkDistanceScore) +
-				(normalizedWeights.recency * recencyScore) +
-				(normalizedWeights.bookmarked * bookmarkedScore) +
-				(normalizedWeights.folder * folderScore);
+			const nonSemanticScore =
+				(normalizedNonSemanticWeights.backlinkDistance * backlinkDistanceScore) +
+				(normalizedNonSemanticWeights.recency * recencyScore) +
+				(normalizedNonSemanticWeights.bookmarked * bookmarkedScore) +
+				(normalizedNonSemanticWeights.folder * folderScore);
+			const additiveBonus = semanticBonusCap * (1 - semantic) * nonSemanticScore;
+			const rawWeightedScore = semantic + additiveBonus;
 			const finalScore = Math.max(0, Math.min(1, rawWeightedScore));
 
 			return {
@@ -489,7 +492,13 @@ export class SearchService {
 					folderScore,
 					backlinkDistanceRaw: distance ?? null,
 					daysSinceModified,
-					weights: normalizedWeights,
+					weights: {
+						semantic: 1,
+						backlinkDistance: semanticBonusCap * normalizedNonSemanticWeights.backlinkDistance,
+						recency: semanticBonusCap * normalizedNonSemanticWeights.recency,
+						bookmarked: semanticBonusCap * normalizedNonSemanticWeights.bookmarked,
+						folder: semanticBonusCap * normalizedNonSemanticWeights.folder
+					},
 					rawWeightedScore,
 					normalizedScore: finalScore
 				}

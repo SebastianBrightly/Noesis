@@ -2093,8 +2093,23 @@ Once your server is running, click the test connection button below.`;
 		const cancelBtn = controls.createEl('button', { text: 'Cancel', attr: { type: 'button' } });
 		const resubmitBtn = controls.createEl('button', { text: 'Resummarize', attr: { type: 'button' } });
 
+		const isPlaceholderSummary = (value: string): boolean => /generating\s+summary/i.test(value.trim());
+		const updateSaveButtonState = (): void => {
+			const content = editor.value.trim();
+			const disableSave = content.length === 0 || isPlaceholderSummary(content);
+			saveBtn.disabled = disableSave;
+			saveBothBtn.disabled = disableSave;
+		};
+
+		updateSaveButtonState();
+		editor.addEventListener('input', updateSaveButtonState);
+
 		saveBtn.addEventListener('click', async () => {
 			const content = editor.value;
+			if (content.trim().length === 0 || isPlaceholderSummary(content)) {
+				new Notice('Please wait for a generated summary before saving.');
+				return;
+			}
 			const safeName = `Noesis Summary ${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
 			try {
 				await this.app.vault.create(safeName, content);
@@ -2114,6 +2129,10 @@ Once your server is running, click the test connection button below.`;
 
 		saveBothBtn.addEventListener('click', async () => {
 			const content = editor.value;
+			if (content.trim().length === 0 || isPlaceholderSummary(content)) {
+				new Notice('Please wait for a generated summary before saving.');
+				return;
+			}
 			const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 			const summaryName = `Noesis Summary ${timestamp}.md`;
 			const convoName = `Noesis Conversation ${timestamp}.md`;
@@ -2142,15 +2161,19 @@ Once your server is running, click the test connection button below.`;
 		resubmitBtn.addEventListener('click', async () => {
 			if (!this.lastConversationForSummary) return;
 			resubmitBtn.disabled = true;
+			saveBtn.disabled = true;
+			saveBothBtn.disabled = true;
 			try {
 				const prompt = `Please summarize the following conversation again, but make it shorter and more concise (max 150 words).\n\nConversation:\n${this.lastConversationForSummary}`;
 				const newSummary = await this.llmService.sendMessage(prompt);
 				editor.value = newSummary;
+				updateSaveButtonState();
 			} catch (err) {
 				LoggingUtility.error('Error re-summarizing:', err);
 				new Notice('❌ Failed to resummarize');
 			} finally {
 				resubmitBtn.disabled = false;
+				updateSaveButtonState();
 			}
 		});
 	}
