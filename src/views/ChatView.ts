@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, DropdownComponent, s
 import { LLMService, createLLMService, ChatMessage as LLMChatMessage, StreamCallback } from '../services/LLMService';
 import { SearchService, SearchResult } from '../services/SearchService';
 import { LoggingUtility } from '../utils/LoggingUtility';
-import LocalLLMPlugin, { ContextMode, PersonalityMode, CHAT_VIEW_TYPE, PersonalityTrait } from '../main';
+import LocalLLMPlugin, { AIConnectionConfig, ContextMode, PersonalityMode, CHAT_VIEW_TYPE, PersonalityTrait } from '../main';
 import { SM_DEFAULT_SETTINGS as SETTINGS_DEFAULTS } from '../services/SettingsManager';
 
 //export const CHAT_VIEW_TYPE = 'local-llm-chat-view';
@@ -43,6 +43,7 @@ interface LLMConfig {
 	systemPrompt?: string;
 	model?: string;
 	apiKey?: string;
+	contextMode?: ContextMode;
 }
 
 interface ObsidianApp {
@@ -75,6 +76,8 @@ export class ChatView extends ItemView {
 	private currentAbortController: AbortController | null = null;
 	private contextMode: ContextMode = ContextMode.OPEN_NOTES;
 	private scopeQueryInput?: HTMLInputElement;
+	private connectionDropdown?: DropdownComponentWithPrivateAPI;
+	private connectionContainer?: HTMLElement;
 
 
 	public plugin: LocalLLMPlugin;
@@ -255,8 +258,13 @@ export class ChatView extends ItemView {
 			.addOption(ContextMode.NONE, 'None')
 			.onChange(async (value) => {
 				this.contextMode = value as ContextMode;
-				// Save the context mode to plugin settings
-				this.plugin.settings.contextMode = this.contextMode;
+				// Save to default settings or selected connection profile
+				const activeConnection = this.getActiveConnection();
+				if (activeConnection) {
+					activeConnection.contextMode = this.contextMode;
+				} else {
+					this.plugin.settings.contextMode = this.contextMode;
+				}
 				await this.plugin.saveSettings();
 				this.updateScopeQueryInputVisibility();
 				// Update RAG status display
@@ -265,6 +273,7 @@ export class ChatView extends ItemView {
 
 		// Set initial value based on plugin settings
 		dropdown.setValue(this.contextMode);
+		this.applyActiveConnectionContextModeToUI();
 
 		this.scopeQueryInput = contextModeContainer.createEl('input', {
 			cls: 'local-llm-context-scope-input',
@@ -335,6 +344,7 @@ export class ChatView extends ItemView {
 
 		// Ensure personality dropdown reflects any later settings changes
 		this.updatePersonalityDropdownFromSettings();
+		this.ensureConnectionSelectorOptions();
 
 		// Create settings button
 		const settingsButton = headerButtons.createEl('button', {
@@ -346,6 +356,26 @@ export class ChatView extends ItemView {
 		settingsButton.addEventListener('click', () => {
 			this.openPluginSettingsPage();
 		});
+
+		this.connectionContainer = headerButtons.createEl('div', {
+			cls: 'local-llm-connection-container'
+		});
+
+		this.connectionContainer.createEl('label', {
+			cls: 'local-llm-connection-label',
+			text: 'Connection:'
+		});
+
+		const connectionDropdown = new DropdownComponent(this.connectionContainer);
+		this.connectionDropdown = connectionDropdown as DropdownComponentWithPrivateAPI;
+		connectionDropdown.onChange(async (value) => {
+			this.plugin.settings.activeAIConnectionId = value === '' ? undefined : value;
+			await this.plugin.saveSettings();
+			this.applyActiveConnectionContextModeToUI();
+			this.updateLLMServiceFromSettings();
+			this.updateRAGStatus();
+		});
+		this.ensureConnectionSelectorOptions();
 		LoggingUtility.log('Header with controls created');
 		// Create main chat container with flexbox layout
 		const chatContainer = container.createEl('div', { cls: 'local-llm-chat-container' });
@@ -451,26 +481,39 @@ export class ChatView extends ItemView {
 	// Method to update LLM service from plugin settings
 	updateLLMServiceFromSettings() {
 		const settings = this.plugin.settings;
+		const activeConnection = this.getActiveConnection();
+		const resolvedConfig: LLMConfig = {
+			apiEndpoint: activeConnection?.apiEndpoint || settings.apiEndpoint,
+			maxTokens: activeConnection?.maxTokens ?? settings.maxTokens,
+			temperature: activeConnection?.temperature ?? settings.temperature,
+			systemPrompt: settings.systemPrompt,
+			model: activeConnection?.model ?? settings.model,
+			apiKey: activeConnection?.apiKey ?? settings.apiKey,
+			contextMode: activeConnection?.contextMode ?? settings.contextMode
+		};
+
+		this.contextMode = resolvedConfig.contextMode || settings.contextMode;
 		LoggingUtility.log('Updating LLM service with settings:', settings);
 		this.llmService = createLLMService({
-			apiEndpoint: settings.apiEndpoint,
-			maxTokens: settings.maxTokens,
-			temperature: settings.temperature,
-			systemPrompt: settings.systemPrompt,
-			model: settings.model,
-			apiKey: settings.apiKey,
+			apiEndpoint: resolvedConfig.apiEndpoint,
+			maxTokens: resolvedConfig.maxTokens,
+			temperature: resolvedConfig.temperature,
+			systemPrompt: resolvedConfig.systemPrompt,
+			model: resolvedConfig.model,
+			apiKey: resolvedConfig.apiKey,
 			enableShortResponses: settings.enableShortResponses,
 			storedPersonalitySystemPrompt: settings.storedPersonalitySystemPrompt,
 			IdentityName: settings.storedPersonalitySystemPrompt ? 'IdentityName' : undefined,
 			personalityName: settings.personalityName,
 		});
+		this.applyActiveConnectionContextModeToUI();
 	}
 
 	/**
 	 * Update context mode from settings
 	 */
 	updateContextModeFromSettings(): void {
-		this.contextMode = this.plugin.settings.contextMode;
+		this.contextMode = this.getEffectiveContextMode();
 		// Update dropdown to reflect new value
 		const dropdown = this.containerEl.querySelector('.local-llm-context-mode-container select') as HTMLSelectElement;
 		if (dropdown) {
@@ -481,6 +524,64 @@ export class ChatView extends ItemView {
 
 		// Update personality dropdown to reflect any changed personality names or selected personality
 		this.updatePersonalityDropdownFromSettings();
+		this.ensureConnectionSelectorOptions();
+	}
+
+	private getConnectionList(): AIConnectionConfig[] {
+		if (!Array.isArray(this.plugin.settings.multiAIConnections)) {
+			return [];
+		}
+
+		return this.plugin.settings.multiAIConnections.filter(connection => !connection.isSleeping);
+	}
+
+	private getActiveConnection(): AIConnectionConfig | undefined {
+		const activeId = this.plugin.settings.activeAIConnectionId;
+		if (!activeId) {
+			return undefined;
+		}
+
+		return this.getConnectionList().find(connection => connection.id === activeId);
+	}
+
+	private getEffectiveContextMode(): ContextMode {
+		return this.getActiveConnection()?.contextMode || this.plugin.settings.contextMode;
+	}
+
+	private applyActiveConnectionContextModeToUI(): void {
+		const dropdown = this.containerEl.querySelector('.local-llm-context-mode-container select') as HTMLSelectElement;
+		this.contextMode = this.getEffectiveContextMode();
+		if (dropdown && dropdown.value !== this.contextMode) {
+			dropdown.value = this.contextMode;
+		}
+	}
+
+	private ensureConnectionSelectorOptions(): void {
+		if (!this.connectionDropdown || !this.connectionContainer) {
+			return;
+		}
+
+		const connections = this.getConnectionList();
+		this.connectionDropdown.selectEl.innerHTML = '';
+		this.connectionDropdown.addOption('', 'Default');
+		connections.forEach(connection => {
+			const label = connection.name?.trim().length ? connection.name.trim() : connection.id;
+			this.connectionDropdown?.addOption(connection.id, label);
+		});
+
+		const activeId = this.plugin.settings.activeAIConnectionId;
+		if (activeId && connections.some(connection => connection.id === activeId)) {
+			this.connectionDropdown.setValue(activeId);
+		} else {
+			this.connectionDropdown.setValue('');
+			this.plugin.settings.activeAIConnectionId = undefined;
+		}
+
+		if (connections.length > 0) {
+			this.connectionContainer.removeClass('local-llm-connection-hidden');
+		} else {
+			this.connectionContainer.addClass('local-llm-connection-hidden');
+		}
 	}
 
 	/**

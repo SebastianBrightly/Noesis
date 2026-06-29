@@ -53,6 +53,18 @@ export enum PersonalityTrait {
 	ADRIAN = 'Innovative and strategic thinker with a focus on big-picture ideas'
 }
 
+export interface AIConnectionConfig {
+	id: string;
+	name: string;
+	isSleeping?: boolean;
+	contextMode: ContextMode;
+	apiEndpoint: string;
+	apiKey?: string;
+	model?: string;
+	maxTokens: number;
+	temperature: number;
+}
+
 export interface LocalLLMSettings {
 	apiEndpoint: string;
 	maxTokens: number;
@@ -129,6 +141,9 @@ export interface LocalLLMSettings {
 	responseNoteTemplate?: string;
 	autoTagDictionary?: string[];
 	autoTagWorkload?: 'small' | 'medium' | 'large';
+	autoTagConnectionId?: string;
+	multiAIConnections?: AIConnectionConfig[];
+	activeAIConnectionId?: string;
 }
 
 export const DEFAULT_SETTINGS: LocalLLMSettings = {
@@ -195,7 +210,10 @@ export const DEFAULT_SETTINGS: LocalLLMSettings = {
 	enableResponseNoteTemplate: true,
 	responseNoteTemplate: DEFAULT_RESPONSE_NOTE_TEMPLATE,
 	autoTagDictionary: [],
-	autoTagWorkload: 'medium'
+	autoTagWorkload: 'medium',
+	autoTagConnectionId: undefined,
+	multiAIConnections: [],
+	activeAIConnectionId: undefined
 };
 //Should group these as a single object
 const REVIEW_PROMPT_THRESHOLD_MS = 60 * 60 * 1000;
@@ -411,6 +429,68 @@ export default class LocalLLMPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 		let needsMigrationSave = false;
 
+		const normalizeConnectionConfig = (raw: any): AIConnectionConfig | null => {
+			if (!raw || typeof raw !== 'object') {
+				return null;
+			}
+
+			const validContextModes: ContextMode[] = [
+				ContextMode.CURRENT_NOTE,
+				ContextMode.LINKED_NOTES,
+				ContextMode.CURRENT_FOLDER,
+				ContextMode.DAILY_NOTES,
+				ContextMode.BOOKMARKED_NOTES,
+				ContextMode.SEARCH_QUERY_SCOPE,
+				ContextMode.OPEN_NOTES,
+				ContextMode.SEARCH,
+				ContextMode.NONE
+			];
+
+			const id = typeof raw.id === 'string' && raw.id.trim().length > 0
+				? raw.id.trim()
+				: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+			const name = typeof raw.name === 'string' && raw.name.trim().length > 0
+				? raw.name.trim()
+				: 'External Connection';
+
+			const contextMode = validContextModes.includes(raw.contextMode)
+				? raw.contextMode as ContextMode
+				: this.settings.contextMode;
+
+			const apiEndpoint = typeof raw.apiEndpoint === 'string' && raw.apiEndpoint.trim().length > 0
+				? raw.apiEndpoint.trim()
+				: this.settings.apiEndpoint;
+
+			const maxTokens = Number.isFinite(raw.maxTokens)
+				? Number(raw.maxTokens)
+				: this.settings.maxTokens;
+
+			const temperature = Number.isFinite(raw.temperature)
+				? Number(raw.temperature)
+				: this.settings.temperature;
+
+			const apiKey = typeof raw.apiKey === 'string' && raw.apiKey.trim().length > 0
+				? raw.apiKey.trim()
+				: undefined;
+
+			const model = typeof raw.model === 'string' && raw.model.trim().length > 0
+				? raw.model.trim()
+				: undefined;
+
+			return {
+				id,
+				name,
+				isSleeping: Boolean(raw.isSleeping),
+				contextMode,
+				apiEndpoint,
+				apiKey,
+				model,
+				maxTokens,
+				temperature
+			};
+		};
+
 		if (typeof this.settings.hasCompletedFirstRunWizard !== 'boolean') {
 			this.settings.hasCompletedFirstRunWizard = DEFAULT_SETTINGS.hasCompletedFirstRunWizard;
 			needsMigrationSave = true;
@@ -454,6 +534,42 @@ export default class LocalLLMPlugin extends Plugin {
 			needsMigrationSave = true;
 		}
 
+		const rawConnections = (this.settings as any).multiAIConnections;
+		if (!Array.isArray(rawConnections)) {
+			this.settings.multiAIConnections = [];
+			needsMigrationSave = true;
+		} else {
+			const normalizedConnections = rawConnections
+				.map((conn: any) => normalizeConnectionConfig(conn))
+				.filter((conn: AIConnectionConfig | null): conn is AIConnectionConfig => conn !== null);
+
+			if (JSON.stringify(normalizedConnections) !== JSON.stringify(rawConnections)) {
+				needsMigrationSave = true;
+			}
+
+			this.settings.multiAIConnections = normalizedConnections;
+		}
+
+		if (typeof this.settings.activeAIConnectionId !== 'string' || this.settings.activeAIConnectionId.trim().length === 0) {
+			if (this.settings.activeAIConnectionId !== undefined) {
+				needsMigrationSave = true;
+			}
+			this.settings.activeAIConnectionId = undefined;
+		} else if (!(this.settings.multiAIConnections || []).some(conn => conn.id === this.settings.activeAIConnectionId)) {
+			this.settings.activeAIConnectionId = undefined;
+			needsMigrationSave = true;
+		}
+
+		if (typeof this.settings.autoTagConnectionId !== 'string' || this.settings.autoTagConnectionId.trim().length === 0) {
+			if (this.settings.autoTagConnectionId !== undefined) {
+				needsMigrationSave = true;
+			}
+			this.settings.autoTagConnectionId = undefined;
+		} else if (!(this.settings.multiAIConnections || []).some(conn => conn.id === this.settings.autoTagConnectionId && !conn.isSleeping)) {
+			this.settings.autoTagConnectionId = undefined;
+			needsMigrationSave = true;
+		}
+
 		// Migrate personalityNames to array if saved as a string or missing
 		if (!Array.isArray(this.settings.personalityNames)) {
 			const raw = (this.settings as any).personalityNames;
@@ -475,6 +591,24 @@ export default class LocalLLMPlugin extends Plugin {
 	}
 
 	async saveSettings() {
+		if (!Array.isArray(this.settings.multiAIConnections)) {
+			this.settings.multiAIConnections = [];
+		}
+
+		const activeConnectionIds = new Set(
+			(this.settings.multiAIConnections || [])
+				.filter(conn => !conn.isSleeping)
+				.map(conn => conn.id)
+		);
+
+		if (this.settings.activeAIConnectionId && !activeConnectionIds.has(this.settings.activeAIConnectionId)) {
+			this.settings.activeAIConnectionId = undefined;
+		}
+
+		if (this.settings.autoTagConnectionId && !activeConnectionIds.has(this.settings.autoTagConnectionId)) {
+			this.settings.autoTagConnectionId = undefined;
+		}
+
 		await this.saveData(this.settings);
 
 		// Update developer logging setting

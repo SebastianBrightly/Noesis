@@ -1,5 +1,5 @@
 import LocalLLMPlugin from "@/main";
-import  { ContextMode, PersonalityMode,PersonalityTrait, CHAT_VIEW_TYPE } from "@/main";
+import  { ContextMode, PersonalityMode,PersonalityTrait, CHAT_VIEW_TYPE, AIConnectionConfig } from "@/main";
 import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Notice, DropdownComponent  } from "obsidian";
 import React from "react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
@@ -125,6 +125,32 @@ export class SettingsPage extends PluginSettingTab
 					this.plugin.settings.autoTagWorkload = value;
 					await this.plugin.saveSettings();
 				}));
+
+		const availableConnections = (this.plugin.settings.multiAIConnections || []).filter(conn => !conn.isSleeping);
+		if (availableConnections.length > 0) {
+			new Setting(containerEl)
+				.setName('Auto tag connection')
+				.setDesc('Choose which connection Auto Tag should use. Default uses the main LLM Config endpoint.')
+				.addDropdown(dropdown => {
+					dropdown.addOption('', 'Default connection');
+					availableConnections.forEach(conn => {
+						dropdown.addOption(conn.id, conn.name || conn.id);
+					});
+
+					const selectedConnection = this.plugin.settings.autoTagConnectionId || '';
+					if (selectedConnection && !availableConnections.some(conn => conn.id === selectedConnection)) {
+						this.plugin.settings.autoTagConnectionId = undefined;
+						dropdown.setValue('');
+					} else {
+						dropdown.setValue(selectedConnection);
+					}
+
+					dropdown.onChange(async (value) => {
+						this.plugin.settings.autoTagConnectionId = value.trim().length > 0 ? value : undefined;
+						await this.plugin.saveSettings();
+					});
+				});
+		}
 	}
 
 	private visualizeSettings_Templates(containerEl: HTMLElement, LocalLLMSettings: any): void {
@@ -231,6 +257,20 @@ export class SettingsPage extends PluginSettingTab
 			this.contextModeDropdown.setValue(desiredMode);
 		}
 	}
+
+	private refreshAutoTagTabPanel(): void {
+		const tabButtons = Array.from(this.containerEl.querySelectorAll('.local-llm-tab')) as HTMLElement[];
+		const tabPanels = Array.from(this.containerEl.querySelectorAll('.local-llm-panel')) as HTMLElement[];
+
+		const autoTagIndex = tabButtons.findIndex((button) => button.textContent?.trim() === 'Auto Tag');
+		if (autoTagIndex < 0 || autoTagIndex >= tabPanels.length) {
+			return;
+		}
+
+		const autoTagPanel = tabPanels[autoTagIndex];
+		autoTagPanel.empty();
+		this.visualizeSettings_AutoTag(autoTagPanel, this.plugin.settings);
+	}
 //**************************** */
 //**************************** */
 	/**
@@ -244,10 +284,28 @@ export class SettingsPage extends PluginSettingTab
 	{
 		const dropdown = (this as any).modelDropdown;
 		if (!dropdown) return;
+		await this.loadAvailableModelsForConfig(dropdown, {
+			apiEndpoint: this.plugin.settings.apiEndpoint,
+			apiKey: this.plugin.settings.apiKey,
+			savedModel: this.plugin.settings.model || '',
+			errorNotice: 'Failed to load models from LM Studio. Please check your API endpoint and ensure LM Studio is running.'
+		});
+	}
+
+	private async loadAvailableModelsForConfig(
+		dropdown: DropdownComponent,
+		config: {
+			apiEndpoint: string;
+			apiKey?: string;
+			savedModel?: string;
+			errorNotice?: string;
+		}
+	): Promise<void> {
+		if (!dropdown) return;
 
 		try {
 			// Show loading state
-			const savedModel = this.plugin.settings.model || '';
+			const savedModel = config.savedModel || '';
 			dropdown.selectEl.disabled = true;
 			dropdown.selectEl.empty();
 			dropdown.selectEl.createEl('option', { value: '', text: 'Loading models...' });
@@ -255,8 +313,8 @@ export class SettingsPage extends PluginSettingTab
 			// Create a temporary LLM service to fetch models
 			const { createLLMService } = await import('@/services/LLMService');
 			const llmService = createLLMService({
-				apiEndpoint: this.plugin.settings.apiEndpoint,
-				apiKey: this.plugin.settings.apiKey
+				apiEndpoint: config.apiEndpoint,
+				apiKey: config.apiKey
 			});
 
 			// Fetch available models
@@ -296,12 +354,14 @@ export class SettingsPage extends PluginSettingTab
 			dropdown.addOption('', 'Failed to load models');
 
 			// Restore saved model even in error state
-			const savedModel = this.plugin.settings.model || '';
+			const savedModel = config.savedModel || '';
 			dropdown.setValue(savedModel);
 			dropdown.selectEl.disabled = false;
 
 			// Show notice to user
-			new Notice('Failed to load models from LM Studio. Please check your API endpoint and ensure LM Studio is running.');
+			if (config.errorNotice) {
+				new Notice(config.errorNotice);
+			}
 		}
 	}
 
@@ -633,6 +693,248 @@ export class SettingsPage extends PluginSettingTab
 				format: (v) => v.toFixed(2)
 			}
 		);
+
+		const getConnections = (): AIConnectionConfig[] => {
+			if (!Array.isArray(this.plugin.settings.multiAIConnections)) {
+				this.plugin.settings.multiAIConnections = [];
+			}
+
+			return this.plugin.settings.multiAIConnections as AIConnectionConfig[];
+		};
+
+		const createNewConnection = (): AIConnectionConfig => ({
+			id: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			name: `Connection ${getConnections().length + 1}`,
+			isSleeping: false,
+			contextMode: this.plugin.settings.contextMode,
+			apiEndpoint: this.plugin.settings.apiEndpoint,
+			apiKey: this.plugin.settings.apiKey,
+			model: this.plugin.settings.model,
+			maxTokens: this.plugin.settings.maxTokens,
+			temperature: this.plugin.settings.temperature
+		});
+
+		let advancedVisible = false;
+		const advancedSection = containerEl.createDiv({
+			cls: 'local-llm-multi-ai-advanced local-llm-multi-ai-hidden'
+		});
+
+		const renderConnections = () => {
+			advancedSection.empty();
+
+			new Setting(advancedSection)
+				.setName('Named AI connections')
+				.setDesc('Add external providers like ChatGPT or Claude. Each connection keeps its own context mode, endpoint, key, model, max tokens, and temperature.')
+				.addButton(button => button
+					.setButtonText('Add connection')
+					.onClick(async () => {
+						const connections = getConnections();
+						connections.push(createNewConnection());
+						await this.plugin.saveSettings();
+						this.refreshAutoTagTabPanel();
+						renderConnections();
+					}));
+
+			const connections = getConnections();
+			if (connections.length === 0) {
+				advancedSection.createEl('p', {
+					cls: 'local-llm-multi-ai-empty',
+					text: 'No additional connections yet. Add one to expose a connection selector in Chat View.'
+				});
+				return;
+			}
+
+			connections.forEach((connection, index) => {
+				const card = advancedSection.createDiv({ cls: `local-llm-connection-card${connection.isSleeping ? ' local-llm-connection-card-sleeping' : ''}` });
+				const isSleeping = !!connection.isSleeping;
+
+				new Setting(card)
+					.setName(`Connection ${index + 1}`)
+					.setDesc(isSleeping ? 'Sleeping (inactive) - click Wake to reactivate this connection.' : 'Configure this provider profile')
+					.addButton(button => button
+						.setButtonText(isSleeping ? 'Wake' : 'Sleep')
+						.onClick(async () => {
+							connection.isSleeping = !isSleeping;
+							if (connection.isSleeping) {
+								if (this.plugin.settings.activeAIConnectionId === connection.id) {
+									this.plugin.settings.activeAIConnectionId = undefined;
+								}
+								if (this.plugin.settings.autoTagConnectionId === connection.id) {
+									this.plugin.settings.autoTagConnectionId = undefined;
+								}
+							}
+							await this.plugin.saveSettings();
+							this.refreshAutoTagTabPanel();
+							renderConnections();
+						}))
+					.addButton(button => button
+						.setButtonText('Delete')
+						.then((component) => {
+							component.buttonEl.classList.add('mod-warning');
+						})
+						.onClick(async () => {
+							const updated = getConnections().filter((entry) => entry.id !== connection.id);
+							this.plugin.settings.multiAIConnections = updated;
+							if (this.plugin.settings.activeAIConnectionId === connection.id) {
+								this.plugin.settings.activeAIConnectionId = undefined;
+							}
+							if (this.plugin.settings.autoTagConnectionId === connection.id) {
+								this.plugin.settings.autoTagConnectionId = undefined;
+							}
+							await this.plugin.saveSettings();
+							this.refreshAutoTagTabPanel();
+							renderConnections();
+						}));
+				if (isSleeping) {
+					card.createEl('p', {
+						cls: 'local-llm-multi-ai-empty',
+						text: `${connection.name || `Connection ${index + 1}`} is sleeping. Configuration is preserved and hidden.`
+					});
+					return;
+				}
+
+				new Setting(card)
+					.setName('Connection name')
+					.setDesc('Label shown in Chat View connection selector')
+					.addText(text => text
+						.setPlaceholder('ChatGPT, Claude, Remote LM Studio')
+						.setValue(connection.name || '')
+						.onChange(async (value) => {
+							const trimmed = value.trim();
+							connection.name = trimmed.length > 0 ? trimmed : `Connection ${index + 1}`;
+							await this.plugin.saveSettings();
+							this.refreshAutoTagTabPanel();
+						}));
+
+				new Setting(card)
+					.setName('Context mode')
+					.setDesc('Context mode used when this connection is selected in Chat View')
+					.addDropdown(dropdown => dropdown
+						.addOption(ContextMode.CURRENT_NOTE, 'Current Note')
+						.addOption(ContextMode.LINKED_NOTES, 'Linked Notes')
+						.addOption(ContextMode.CURRENT_FOLDER, 'Current Folder')
+						.addOption(ContextMode.DAILY_NOTES, 'Daily Notes')
+						.addOption(ContextMode.BOOKMARKED_NOTES, 'Bookmarked Notes')
+						.addOption(ContextMode.SEARCH_QUERY_SCOPE, 'Search Query Scope')
+						.addOption(ContextMode.OPEN_NOTES, 'Open Tabs')
+						.addOption(ContextMode.SEARCH, 'All Notes')
+						.addOption(ContextMode.NONE, 'No Context')
+						.setValue(connection.contextMode || this.plugin.settings.contextMode)
+						.onChange(async (value) => {
+							connection.contextMode = value as ContextMode;
+							await this.plugin.saveSettings();
+						}));
+
+				new Setting(card)
+					.setName('API endpoint')
+					.setDesc('OpenAI-compatible chat completions endpoint for this connection')
+					.addText(text => text
+						.setPlaceholder('https://api.openai.com/v1/chat/completions')
+						.setValue(connection.apiEndpoint || '')
+						.onChange(async (value) => {
+							connection.apiEndpoint = value.trim();
+							await this.plugin.saveSettings();
+						}));
+
+				new Setting(card)
+					.setName('API key')
+					.setDesc('Optional Bearer token for this connection')
+					.addText(text => text
+						.setPlaceholder('Enter API key')
+						.setValue(connection.apiKey || '')
+						.onChange(async (value) => {
+							const trimmed = value.trim();
+							connection.apiKey = trimmed.length > 0 ? trimmed : undefined;
+							await this.plugin.saveSettings();
+						}));
+
+				let connectionModelDropdown: DropdownComponent | null = null;
+				const connectionModelSetting = new Setting(card)
+					.setName('Model')
+					.setDesc('Optional model name sent in the request payload')
+					.addDropdown(dropdown => {
+						connectionModelDropdown = dropdown;
+						dropdown.addOption('', 'Auto (server chooses)');
+						if (connection.model && connection.model.trim().length > 0) {
+							dropdown.addOption(connection.model, connection.model);
+							dropdown.setValue(connection.model);
+						} else {
+							dropdown.setValue('');
+						}
+
+						dropdown.onChange(async (value) => {
+							connection.model = value.trim().length > 0 ? value : undefined;
+							await this.plugin.saveSettings();
+						});
+					});
+
+				connectionModelSetting.addButton(button => button
+					.setButtonText('Refresh Models')
+					.setTooltip('Load available models from this connection endpoint')
+					.onClick(async () => {
+						if (!connectionModelDropdown) {
+							return;
+						}
+
+						await this.loadAvailableModelsForConfig(connectionModelDropdown, {
+							apiEndpoint: connection.apiEndpoint,
+							apiKey: connection.apiKey,
+							savedModel: connection.model || '',
+							errorNotice: `Failed to load models for ${connection.name || `Connection ${index + 1}`}. Check API endpoint and key.`
+						});
+
+						const selected = connectionModelDropdown.selectEl.value.trim();
+						connection.model = selected.length > 0 ? selected : undefined;
+						await this.plugin.saveSettings();
+					}));
+
+				new Setting(card)
+					.setName('Max tokens')
+					.setDesc('Maximum response tokens for this connection')
+					.addText(text => text
+						.setPlaceholder('10000')
+						.setValue(String(connection.maxTokens ?? this.plugin.settings.maxTokens))
+						.onChange(async (value) => {
+							const parsed = Number.parseInt(value, 10);
+							if (Number.isFinite(parsed) && parsed > 0) {
+								connection.maxTokens = parsed;
+								await this.plugin.saveSettings();
+							}
+						}));
+
+				new Setting(card)
+					.setName('Temperature')
+					.setDesc('Sampling temperature (0 to 1) for this connection')
+					.addText(text => text
+						.setPlaceholder('0.70')
+						.setValue(String(connection.temperature ?? this.plugin.settings.temperature))
+						.onChange(async (value) => {
+							const parsed = Number.parseFloat(value);
+							if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 1) {
+								connection.temperature = parsed;
+								await this.plugin.saveSettings();
+							}
+						}));
+			});
+		};
+
+		new Setting(containerEl)
+			.setName('Multi AI connections')
+			.setDesc('Advanced: create named provider profiles and switch between them from Chat View.')
+			.addButton(button => button
+				.setButtonText('Show Advanced')
+				.onClick(() => {
+					advancedVisible = !advancedVisible;
+					if (advancedVisible) {
+						button.setButtonText('Hide Advanced');
+						advancedSection.removeClass('local-llm-multi-ai-hidden');
+					} else {
+						button.setButtonText('Show Advanced');
+						advancedSection.addClass('local-llm-multi-ai-hidden');
+					}
+				}));
+
+		renderConnections();
 	}
 
 	private visualizeSettings_SystemPrompt(containerEl: HTMLElement, LocalLLMSettings: any): void

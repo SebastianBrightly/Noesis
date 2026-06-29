@@ -36,6 +36,50 @@ export class SettingsManager {
 		try {
 			const loadedData = await this.plugin.loadData();
 			this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+			const validContextModes: ContextMode[] = [
+				ContextMode.CURRENT_NOTE,
+				ContextMode.LINKED_NOTES,
+				ContextMode.CURRENT_FOLDER,
+				ContextMode.DAILY_NOTES,
+				ContextMode.BOOKMARKED_NOTES,
+				ContextMode.SEARCH_QUERY_SCOPE,
+				ContextMode.OPEN_NOTES,
+				ContextMode.SEARCH,
+				ContextMode.NONE
+			];
+			const normalizeConnectionConfig = (raw: any) => {
+				if (!raw || typeof raw !== 'object') {
+					return null;
+				}
+
+				return {
+					id: typeof raw.id === 'string' && raw.id.trim().length > 0
+						? raw.id.trim()
+						: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+					name: typeof raw.name === 'string' && raw.name.trim().length > 0
+						? raw.name.trim()
+						: 'External Connection',
+					isSleeping: Boolean(raw.isSleeping),
+					contextMode: validContextModes.includes(raw.contextMode)
+						? raw.contextMode
+						: this.settings.contextMode,
+					apiEndpoint: typeof raw.apiEndpoint === 'string' && raw.apiEndpoint.trim().length > 0
+						? raw.apiEndpoint.trim()
+						: this.settings.apiEndpoint,
+					apiKey: typeof raw.apiKey === 'string' && raw.apiKey.trim().length > 0
+						? raw.apiKey.trim()
+						: undefined,
+					model: typeof raw.model === 'string' && raw.model.trim().length > 0
+						? raw.model.trim()
+						: undefined,
+					maxTokens: Number.isFinite(raw.maxTokens)
+						? Number(raw.maxTokens)
+						: this.settings.maxTokens,
+					temperature: Number.isFinite(raw.temperature)
+						? Number(raw.temperature)
+						: this.settings.temperature
+				};
+			};
 			// Ensure new scaffold fields have expected types (migration)
 			if (typeof this.settings.enableShortResponses !== 'boolean') {
 				this.settings.enableShortResponses = DEFAULT_SETTINGS.enableShortResponses;
@@ -65,6 +109,29 @@ export class SettingsManager {
 			}
 			if (!Array.isArray(this.settings.storedPersonalitySystemPrompt)) {
 				this.settings.storedPersonalitySystemPrompt = DEFAULT_SETTINGS.storedPersonalitySystemPrompt;
+			}
+			if (!Array.isArray((this.settings as any).multiAIConnections)) {
+				this.settings.multiAIConnections = DEFAULT_SETTINGS.multiAIConnections;
+			} else {
+				this.settings.multiAIConnections = (this.settings as any).multiAIConnections
+					.map((entry: any) => normalizeConnectionConfig(entry))
+					.filter((entry: any) => entry !== null);
+			}
+
+			if (typeof this.settings.activeAIConnectionId !== 'string' || this.settings.activeAIConnectionId.trim().length === 0) {
+				this.settings.activeAIConnectionId = DEFAULT_SETTINGS.activeAIConnectionId;
+			}
+
+			if (this.settings.activeAIConnectionId && !(this.settings.multiAIConnections || []).some(conn => conn.id === this.settings.activeAIConnectionId)) {
+				this.settings.activeAIConnectionId = DEFAULT_SETTINGS.activeAIConnectionId;
+			}
+
+			if (typeof this.settings.autoTagConnectionId !== 'string' || this.settings.autoTagConnectionId.trim().length === 0) {
+				this.settings.autoTagConnectionId = DEFAULT_SETTINGS.autoTagConnectionId;
+			}
+
+			if (this.settings.autoTagConnectionId && !(this.settings.multiAIConnections || []).some(conn => conn.id === this.settings.autoTagConnectionId && !conn.isSleeping)) {
+				this.settings.autoTagConnectionId = DEFAULT_SETTINGS.autoTagConnectionId;
 			}
 			LoggingUtility.log('Settings loaded:', this.settings);
 		} catch (error) {

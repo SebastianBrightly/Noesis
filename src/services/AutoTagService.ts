@@ -1,5 +1,7 @@
 import { App, MarkdownView, Menu, Modal, Notice, TAbstractFile, TFile, TFolder } from 'obsidian';
 import type LocalLLMPlugin from '../main';
+import type { AIConnectionConfig } from '../main';
+import { createLLMService } from './LLMService';
 import { LoggingUtility } from '../utils/LoggingUtility';
 
 type AutoTagSource = 'context-menu' | 'command';
@@ -488,6 +490,36 @@ export class AutoTagService {
 		].join('\n');
 	}
 
+	private getAutoTagConnectionConfig(): AIConnectionConfig | undefined {
+		const selectedId = this.plugin.settings.autoTagConnectionId;
+		if (!selectedId) {
+			return undefined;
+		}
+
+		const connections = this.plugin.settings.multiAIConnections || [];
+		return connections.find((connection) => connection.id === selectedId && !connection.isSleeping);
+	}
+
+	private buildAutoTagLLMService() {
+		const connection = this.getAutoTagConnectionConfig();
+		if (!connection) {
+			return this.plugin.llmService;
+		}
+
+		return createLLMService({
+			apiEndpoint: connection.apiEndpoint,
+			apiKey: connection.apiKey,
+			maxTokens: connection.maxTokens,
+			temperature: connection.temperature,
+			systemPrompt: this.plugin.settings.systemPrompt,
+			model: connection.model,
+			enableShortResponses: this.plugin.settings.enableShortResponses,
+			augmentSystemPromptwithPersonality: this.plugin.settings.augmentSystemPromptwithPersonality,
+			personalityPrompt: Array.isArray(this.plugin.settings.personalityPrompt) ? this.plugin.settings.personalityPrompt[0] : this.plugin.settings.personalityPrompt,
+			personalityName: this.plugin.settings.personalityName
+		});
+	}
+
 	private async applyMetadata(file: TFile, metadata: AutoMetadataSuggestion): Promise<AutoTagApplyResult> {
 		const existingTags = this.getExistingTags(file);
 		const existingAliases = this.getExistingAliases(file);
@@ -642,7 +674,8 @@ export class AutoTagService {
 		const showWorkingNotice = options?.showWorkingNotice ?? true;
 		const showResultNotice = options?.showResultNotice ?? true;
 
-		if (!this.plugin.llmService) {
+		const autoTagLLMService = this.buildAutoTagLLMService();
+		if (!autoTagLLMService) {
 			if (showResultNotice) {
 				new Notice('Noesis is still initializing. Try again in a moment.');
 			}
@@ -683,7 +716,7 @@ export class AutoTagService {
 			const existingTags = this.getExistingTags(file);
 			const dictionaryTags = this.getConfiguredDictionaryTags();
 			const prompt = this.buildPrompt(file.path, existingTags, dictionaryTags, noteBody);
-			const response = await this.plugin.llmService.sendMessage(prompt);
+			const response = await autoTagLLMService.sendMessage(prompt);
 			const generatedMetadata = parseAutoMetadataResponse(response);
 			const relevantDictionaryTags = this.estimateRelevantDictionaryTags(noteBody, dictionaryTags);
 			if (relevantDictionaryTags.length > 0) {
