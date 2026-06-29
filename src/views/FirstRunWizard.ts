@@ -1,8 +1,16 @@
 import { App, Modal, Notice, Setting, TFile } from 'obsidian';
 import LocalLLMPlugin from '@/main';
+import {
+	DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID,
+	getWorkspaceProfileTemplateById,
+	WORKSPACE_PROFILE_OPTIONS,
+	type WorkspaceProfileTemplate,
+	type WorkspaceProfileTemplateId
+} from '@/templates/firstRunWorkspaceProfiles';
 
 interface FirstRunScaffoldOptions {
 	rootFolder: string;
+	templateId: WorkspaceProfileTemplateId;
 	createTemplates: boolean;
 	openOverviewAfterCreate: boolean;
 }
@@ -15,14 +23,17 @@ interface ScaffoldSummary {
 
 export class FirstRunWizardModal extends Modal {
 	private plugin: LocalLLMPlugin;
+	private readonly noesisTemplatesRootFolder = 'Noesis Templates';
 	private rootFolder: string;
+	private selectedTemplateId: WorkspaceProfileTemplateId = DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID;
 	private createTemplates: boolean = true;
 	private openOverviewAfterCreate: boolean = true;
 
 	constructor(app: App, plugin: LocalLLMPlugin) {
 		super(app);
 		this.plugin = plugin;
-		this.rootFolder = plugin.settings.researchWorkspaceRoot || 'my-research';
+		const defaultTemplate = getWorkspaceProfileTemplateById(this.selectedTemplateId);
+		this.rootFolder = plugin.settings.researchWorkspaceRoot || defaultTemplate.defaultRootFolder;
 	}
 
 	onOpen(): void {
@@ -32,36 +43,55 @@ export class FirstRunWizardModal extends Modal {
 
 		contentEl.createEl('h2', { text: 'Noesis Research Wizard' });
 		contentEl.createEl('p', {
-			text: 'Create a research workspace in your vault with RAG-ready folders and starter templates.'
+			text: 'Create a workspace in your vault with a starter structure and optional markdown templates.'
 		});
 
-		const structurePreview = [
-			'my-research/',
-			'  raw/ (articles, papers, repos, data, images, assets)',
-			'  wiki/ (index, log, overview, concepts, entities, sources, comparisons)',
-			'  outputs/',
-			'  CLAUDE.md',
-			'  .gitignore'
-		].join('\n');
-		contentEl.createEl('pre', {
-			cls: 'noesis-first-run-structure-preview',
-			text: structurePreview
+		const templateDescriptionEl = contentEl.createEl('p', {
+			cls: 'noesis-first-run-template-description'
 		});
+
+		const previewEl = contentEl.createEl('pre', {
+			cls: 'noesis-first-run-structure-preview',
+			text: ''
+		});
+
+		const renderTemplatePreview = () => {
+			const template = getWorkspaceProfileTemplateById(this.selectedTemplateId);
+			templateDescriptionEl.setText(template.description);
+			previewEl.setText(this.buildStructurePreview(this.sanitizeVaultPath(this.rootFolder, template.defaultRootFolder), template));
+		};
 
 		new Setting(contentEl)
-			.setName('Research root folder')
-			.setDesc('Vault-relative path. Example: my-research')
+			.setName('Workspace profile')
+			.setDesc('Select a starter structure to scaffold in your vault.')
+			.addDropdown((dropdown) => {
+				for (const option of WORKSPACE_PROFILE_OPTIONS) {
+					dropdown.addOption(option.id, option.label);
+				}
+
+				dropdown.setValue(this.selectedTemplateId).onChange((value) => {
+					this.selectedTemplateId = value as WorkspaceProfileTemplateId;
+					renderTemplatePreview();
+				});
+			});
+
+		new Setting(contentEl)
+			.setName('Workspace root folder')
+			.setDesc('Vault-relative path. Leave blank to use the profile default root.')
 			.addText((text) => {
 				text.setPlaceholder('my-research')
 					.setValue(this.rootFolder)
 					.onChange((value) => {
 						this.rootFolder = value;
+						renderTemplatePreview();
 					});
 			});
 
+		renderTemplatePreview();
+
 		new Setting(contentEl)
-			.setName('Create RAG templates')
-			.setDesc('Adds source, concept, entity, and comparison templates.')
+			.setName('Create starter templates')
+			.setDesc('Adds markdown templates specific to the selected profile.')
 			.addToggle((toggle) => {
 				toggle.setValue(this.createTemplates).onChange((value) => {
 					this.createTemplates = value;
@@ -96,6 +126,7 @@ export class FirstRunWizardModal extends Modal {
 			try {
 				const summary = await this.createResearchWorkspace({
 					rootFolder: this.rootFolder,
+					templateId: this.selectedTemplateId,
 					createTemplates: this.createTemplates,
 					openOverviewAfterCreate: this.openOverviewAfterCreate
 				});
@@ -113,10 +144,10 @@ export class FirstRunWizardModal extends Modal {
 		this.contentEl.empty();
 	}
 
-	private sanitizeVaultPath(pathValue: string): string {
+	private sanitizeVaultPath(pathValue: string, fallback: string = 'my-research'): string {
 		const normalized = pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
 		if (!normalized) {
-			return 'my-research';
+			return fallback;
 		}
 		return normalized;
 	}
@@ -145,212 +176,79 @@ export class FirstRunWizardModal extends Modal {
 			return false;
 		}
 
+		const folderPath = normalized.split('/').slice(0, -1).join('/');
+		if (folderPath) {
+			await this.ensureFolder(folderPath);
+		}
+
 		await this.app.vault.adapter.write(normalized, content);
 		return true;
 	}
 
-	private getBaseFiles(root: string): Array<{ path: string; content: string }> {
+	private getTemplateSetupGuideContent(templatesFolderPath: string): string {
 		return [
-			{
-				path: `${root}/wiki/index.md`,
-				content: [
-					'# Research Index',
-					'',
-					'Generated catalog for ingested knowledge artifacts.',
-					'',
-					'## Sources',
-					'- Add or refresh source summaries under wiki/sources/ and list them here.',
-					'',
-					'## Concepts',
-					'- Track concept pages under wiki/concepts/.'
-				].join('\n')
-			},
-			{
-				path: `${root}/wiki/log.md`,
-				content: [
-					'# Ingest Log',
-					'',
-					'Append-only chronological record of indexing and synthesis runs.',
-					'',
-					'| Date | Action | Input | Output | Notes |',
-					'| --- | --- | --- | --- | --- |'
-				].join('\n')
-			},
-			{
-				path: `${root}/wiki/overview.md`,
-				content: [
-					'# Project Overview',
-					'',
-					'## Goals',
-					'- Define what this research workspace is trying to answer.',
-					'',
-					'## Current Focus',
-					'- Capture active hypotheses, blockers, and next experiments.',
-					'',
-					'## Retrieval Notes',
-					'- Keep this note short so it can be used as high-signal RAG context.'
-				].join('\n')
-			},
-			{
-				path: `${root}/CLAUDE.md`,
-				content: [
-					'# Research Schema',
-					'',
-					'Use this schema when generating or updating markdown in this workspace.',
-					'',
-					'## Folder Contract',
-					'- raw/: immutable source material',
-					'- wiki/: generated knowledge notes and summaries',
-					'- outputs/: final artifacts, reports, and presentations',
-					'',
-					'## Source Summary Template',
-					'- Source metadata (title, author, url, date)',
-					'- Abstract in 5-8 bullets',
-					'- Key entities and concepts with links',
-					'- Evidence quality notes',
-					'',
-					'## Comparison Template',
-					'- Scope',
-					'- Similarities',
-					'- Differences',
-					'- Decision guidance',
-					'',
-					'## Style',
-					'- Prefer concise markdown with links between pages.',
-					'- Keep paragraphs short for chunk-friendly retrieval.'
-				].join('\n')
-			},
-			{
-				path: `${root}/.gitignore`,
-				content: [
-					'# Binary/raw artifacts',
-					'raw/data/',
-					'raw/assets/',
-					'raw/images/',
-					'',
-					'# Local exports',
-					'outputs/*.pdf',
-					'outputs/*.pptx',
-					'outputs/*.docx'
-				].join('\n')
-			}
-		];
+			'# Noesis Templates Setup',
+			'',
+			'Noesis created starter note templates in this folder, but Obsidian does not auto-select a template folder.',
+			'',
+			'## Set Template Folder Location (manual)',
+			'1. Open Settings in Obsidian.',
+			'2. Go to Core Plugins and enable Templates (if it is off).',
+			'3. Open Templates settings.',
+			`4. Set Template folder location to: ${templatesFolderPath}`,
+			'5. Optional: enable Trigger template on new file if you want automatic insertion.',
+			'',
+			'## Template Organization',
+			'- Templates are stored directly in this single folder.',
+			'- File names include profile/path context so templates from different profiles can coexist.',
+			'- You can rename templates if needed; Noesis only writes missing files.',
+			'',
+			'## Re-running The Wizard',
+			'- Running the wizard again with another profile adds new templates here.',
+			'- Existing templates are not overwritten.'
+		].join('\n');
 	}
 
-	private getTemplateFiles(root: string): Array<{ path: string; content: string }> {
-		return [
-			{
-				path: `${root}/wiki/sources/_source-template.md`,
-				content: [
-					'# Source: {{title}}',
-					'',
-					'## Metadata',
-					'- Author:',
-					'- URL:',
-					'- Date:',
-					'',
-					'## Summary',
-					'- ',
-					'',
-					'## Evidence',
-					'- ',
-					'',
-					'## Linked Concepts',
-					'- [[concepts/{{concept-name}}]]'
-				].join('\n')
-			},
-			{
-				path: `${root}/wiki/concepts/_concept-template.md`,
-				content: [
-					'# Concept: {{name}}',
-					'',
-					'## Definition',
-					'- ',
-					'',
-					'## Why it matters',
-					'- ',
-					'',
-					'## Related entities',
-					'- [[entities/{{entity-name}}]]',
-					'',
-					'## Source links',
-					'- [[sources/{{source-name}}]]'
-				].join('\n')
-			},
-			{
-				path: `${root}/wiki/entities/_entity-template.md`,
-				content: [
-					'# Entity: {{name}}',
-					'',
-					'## Type',
-					'- Person | Organization | Tool | Dataset',
-					'',
-					'## Description',
-					'- ',
-					'',
-					'## Relationships',
-					'- [[concepts/{{concept-name}}]]',
-					'',
-					'## Supporting sources',
-					'- [[sources/{{source-name}}]]'
-				].join('\n')
-			},
-			{
-				path: `${root}/wiki/comparisons/_comparison-template.md`,
-				content: [
-					'# Comparison: {{option-a}} vs {{option-b}}',
-					'',
-					'## Scope',
-					'- ',
-					'',
-					'## Similarities',
-					'- ',
-					'',
-					'## Differences',
-					'- ',
-					'',
-					'## Recommendation',
-					'- '
-				].join('\n')
-			},
-			{
-				path: `${root}/outputs/_report-template.md`,
-				content: [
-					'# Report: {{topic}}',
-					'',
-					'## Executive summary',
-					'- ',
-					'',
-					'## Findings',
-					'- ',
-					'',
-					'## Risks and unknowns',
-					'- ',
-					'',
-					'## Next actions',
-					'- '
-				].join('\n')
+	private getCentralizedTemplateFileName(templatePath: string): string {
+		const normalized = this.sanitizeVaultPath(templatePath)
+			.replace(/\//g, '__')
+			.replace(/[\\:*?"<>|]/g, '-');
+
+		return normalized || 'noesis-template.md';
+	}
+
+	private buildStructurePreview(root: string, template: WorkspaceProfileTemplate): string {
+		const visibleFolders = template.folders.slice(0, 10);
+		const hiddenFolderCount = Math.max(template.folders.length - visibleFolders.length, 0);
+		const lines: string[] = [`${root}/`];
+
+		for (const folder of visibleFolders) {
+			lines.push(`  ${folder}/`);
+		}
+
+		if (hiddenFolderCount > 0) {
+			lines.push(`  ... (+${hiddenFolderCount} more folders)`);
+		}
+
+		if (template.baseFiles.length > 0) {
+			lines.push('');
+			lines.push('Starter files:');
+			for (const file of template.baseFiles.slice(0, 3)) {
+				lines.push(`  ${file.path}`);
 			}
-		];
+		}
+
+		return lines.join('\n');
 	}
 
 	private async createResearchWorkspace(options: FirstRunScaffoldOptions): Promise<ScaffoldSummary> {
-		const root = this.sanitizeVaultPath(options.rootFolder);
+		const template = getWorkspaceProfileTemplateById(options.templateId);
+		const root = this.sanitizeVaultPath(options.rootFolder, template.defaultRootFolder);
+		const templatesRoot = this.sanitizeVaultPath(this.noesisTemplatesRootFolder);
 		const folders = [
 			root,
-			`${root}/raw`,
-			`${root}/raw/articles`,
-			`${root}/raw/papers`,
-			`${root}/raw/repos`,
-			`${root}/raw/data`,
-			`${root}/raw/images`,
-			`${root}/raw/assets`,
-			`${root}/wiki`,
-			`${root}/wiki/concepts`,
-			`${root}/wiki/entities`,
-			`${root}/wiki/sources`,
-			`${root}/wiki/comparisons`,
-			`${root}/outputs`
+			templatesRoot,
+			...template.folders.map((folder) => this.sanitizeVaultPath(`${root}/${folder}`))
 		];
 
 		let createdFolders = 0;
@@ -362,18 +260,25 @@ export class FirstRunWizardModal extends Modal {
 		}
 
 		let createdFiles = 0;
-		const baseFiles = this.getBaseFiles(root);
-		for (const file of baseFiles) {
-			const created = await this.createFileIfMissing(file.path, file.content);
+		for (const file of template.baseFiles) {
+			const created = await this.createFileIfMissing(`${root}/${file.path}`, file.content);
 			if (created) {
 				createdFiles += 1;
 			}
 		}
 
+		const guideCreated = await this.createFileIfMissing(
+			`${templatesRoot}/README - Set Obsidian Template Folder.md`,
+			this.getTemplateSetupGuideContent(templatesRoot)
+		);
+		if (guideCreated) {
+			createdFiles += 1;
+		}
+
 		if (options.createTemplates) {
-			const templateFiles = this.getTemplateFiles(root);
-			for (const template of templateFiles) {
-				const created = await this.createFileIfMissing(template.path, template.content);
+			for (const templateFile of template.templateFiles) {
+				const templateFileName = this.getCentralizedTemplateFileName(templateFile.path);
+				const created = await this.createFileIfMissing(`${templatesRoot}/${templateFileName}`, templateFile.content);
 				if (created) {
 					createdFiles += 1;
 				}
@@ -385,10 +290,17 @@ export class FirstRunWizardModal extends Modal {
 		await this.plugin.saveSettings();
 
 		if (options.openOverviewAfterCreate) {
-			const overviewPath = `${root}/wiki/overview.md`;
-			const overviewFile = this.app.vault.getAbstractFileByPath(overviewPath);
-			if (overviewFile instanceof TFile) {
-				await this.app.workspace.getLeaf(true).openFile(overviewFile);
+			const candidatePaths = new Set<string>(['wiki/overview.md', 'overview.md', 'README.md']);
+			for (const baseFile of template.baseFiles) {
+				candidatePaths.add(baseFile.path);
+			}
+
+			for (const candidatePath of candidatePaths) {
+				const candidateFile = this.app.vault.getAbstractFileByPath(`${root}/${candidatePath}`);
+				if (candidateFile instanceof TFile) {
+					await this.app.workspace.getLeaf(true).openFile(candidateFile);
+					break;
+				}
 			}
 		}
 

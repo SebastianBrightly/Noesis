@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, Notice, DropdownComponent, FileSystemAdapter } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, Notice, DropdownComponent, FileSystemAdapter, TAbstractFile } from 'obsidian';
 import { ChatView } from './views/ChatView';
 import { LoggingUtility } from './utils/LoggingUtility';
 import { RAGService } from './services/RAGService';
@@ -340,6 +340,19 @@ export default class LocalLLMPlugin extends Plugin {
 				new FirstRunWizardModal(this.app, this).open();
 			}
 		});
+
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, file: TAbstractFile) => {
+				menu.addItem((item) => {
+					item
+						.setTitle('Open Noesis Workspace Wizard')
+						.setIcon('sparkles')
+						.onClick(() => {
+							new FirstRunWizardModal(this.app, this).open();
+						});
+				});
+			})
+		);
 
 
 

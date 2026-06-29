@@ -1,0 +1,56 @@
+{
+    "id":  "financial",
+    "label":  "Financial",
+    "description":  "A finance workspace for budgets, goals, taxes, accounts, and investment tracking.",
+    "defaultRootFolder":  "my-finance",
+    "folders":  [
+                    "accounts",
+                    "budget/monthly",
+                    "budget/annual",
+                    "investments",
+                    "taxes",
+                    "goals",
+                    "receipts",
+                    "reports"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "overview.md",
+                          "content":  "# Financial Workspace Overview\n\n## Current Targets\n- \n\n## Monthly Priorities\n- \n\n## Watchlist\n- \n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "financial/budget/monthly/_monthly-budget-template.md",
+                              "content":  "---\ntype: monthly-budget\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - finance/budget\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"monthly budget totals\"\n  - \"overspend categories\"\n---\n\n# Monthly Budget: {{month}}\n\n## Income\n- \n\n## Fixed Expenses\n- \n\n## Variable Expenses\n- \n\n## Variance\n- Planned:\n- Actual:\n\n## Notes\n- \n"
+                          },
+                          {
+                              "path":  "financial/investments/_investment-note-template.md",
+                              "content":  "---\ntype: investment-note\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - finance/investment\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"investment thesis\"\n  - \"key risks\"\n---\n\n# Investment: {{name}}\n\n## Thesis\n- \n\n## Entry Criteria\n- \n\n## Risks\n- \n\n## Position Notes\n- \n\n## Exit Signals\n- \n"
+                          },
+                          {
+                              "path":  "financial/budget/annual/_annual-budget-template.md",
+                              "content":  "---\ntype: annual-budget\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - finance/budget\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"annual budget targets\"\n  - \"yearly savings plan\"\n---\n\n# Annual Budget: {{year}}\n\n## Targets\n- \n\n## Planned Income\n- \n\n## Planned Expenses\n- \n\n## Savings and Investment Plan\n- \n"
+                          },
+                          {
+                              "path":  "financial/accounts/_account-template.md",
+                              "content":  "---\ntype: account-note\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - finance/account\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"account details\"\n  - \"account review notes\"\n---\n\n# Account: {{institution}} - {{account-name}}\n\n## Account Details\n- Type:\n- Last 4:\n- Owner:\n\n## Purpose\n- \n\n## Monthly Maintenance Notes\n- \n"
+                          },
+                          {
+                              "path":  "financial/taxes/_tax-year-template.md",
+                              "content":  "---\ntype: tax-year\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - finance/tax\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"tax filing checklist\"\n  - \"documents still needed\"\n---\n\n# Tax Year: {{year}}\n\n## Filing Status\n- \n\n## Documents Collected\n- [ ] \n\n## Deductions and Credits\n- \n\n## Open Tasks\n- [ ] \n"
+                          },
+                          {
+                              "path":  "financial/goals/_financial-goal-template.md",
+                              "content":  "---\ntype: financial-goal\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - finance/goal\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"financial goal target\"\n  - \"progress and blockers\"\n---\n\n# Financial Goal: {{goal-name}}\n\n## Target\n- Amount:\n- Date:\n\n## Current Progress\n- \n\n## Strategy\n- \n\n## Risks\n- \n"
+                          },
+                          {
+                              "path":  "financial/receipts/_receipt-template.md",
+                              "content":  "---\ntype: receipt\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: archived\ntags:\n  - finance/receipt\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"receipt amount and vendor\"\n---\n\n# Receipt: {{vendor}} - {{date}}\n\n## Details\n- Amount:\n- Category:\n- Payment Method:\n\n## Tax Relevant\n- Yes/No:\n\n## Notes\n- \n"
+                          },
+                          {
+                              "path":  "financial/reports/_financial-report-template.md",
+                              "content":  "---\ntype: financial-report\ntheme: financial\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - finance/report\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"financial summary\"\n  - \"next month actions\"\n---\n\n# Financial Report: {{period}}\n\n## Snapshot\n- \n\n## Income vs Expense\n- \n\n## Savings Rate\n- \n\n## Key Decisions\n- \n\n## Next Actions\n- [ ] \n"
+                          }
+                      ]
+}

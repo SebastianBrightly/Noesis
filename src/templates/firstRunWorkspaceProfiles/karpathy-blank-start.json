@@ -1,0 +1,41 @@
+{
+    "id":  "karpathy-blank-start",
+    "label":  "Karpathy blank start",
+    "description":  "A light, low-opinion structure inspired by start-blank workflows with room to evolve.",
+    "defaultRootFolder":  "my-karpathy-start",
+    "folders":  [
+                    "notes",
+                    "sources",
+                    "experiments",
+                    "scratch",
+                    "outputs"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "README.md",
+                          "content":  "# Blank Start Workspace\n\nStart simple. Add folders only when pressure appears.\n\n## Current Direction\n- \n\n## Questions\n- \n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "karpathy-blank-start/notes/_note-template.md",
+                              "content":  "---\ntype: note\ntheme: karpathy-blank-start\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - blank/note\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"main takeaway\"\n  - \"open question\"\n---\n\n# {{title}}\n\n## Context\n- \n\n## Notes\n- \n\n## Open Questions\n- \n\n## Next Step\n- [ ] \n"
+                          },
+                          {
+                              "path":  "karpathy-blank-start/sources/_source-template.md",
+                              "content":  "---\ntype: source\ntheme: karpathy-blank-start\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - blank/source\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"source summary\"\n  - \"important quote\"\n---\n\n# Source: {{title}}\n\n## Metadata\n- URL:\n- Author:\n- Date:\n\n## Summary\n- \n\n## Key Quotes\n- \n"
+                          },
+                          {
+                              "path":  "karpathy-blank-start/experiments/_experiment-template.md",
+                              "content":  "---\ntype: experiment\ntheme: karpathy-blank-start\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - blank/experiment\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"hypothesis\"\n  - \"result and conclusion\"\n---\n\n# Experiment: {{name}}\n\n## Hypothesis\n- \n\n## Setup\n- \n\n## Result\n- \n\n## Conclusion\n- \n"
+                          },
+                          {
+                              "path":  "karpathy-blank-start/scratch/_scratch-template.md",
+                              "content":  "---\ntype: scratch\ntheme: karpathy-blank-start\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - blank/scratch\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"scratch idea\"\n---\n\n# Scratch: {{title}}\n\n## Dump\n- \n\n## Keep\n- \n\n## Discard\n- \n"
+                          },
+                          {
+                              "path":  "karpathy-blank-start/outputs/_output-template.md",
+                              "content":  "---\ntype: output\ntheme: karpathy-blank-start\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - blank/output\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"final output summary\"\n---\n\n# Output: {{title}}\n\n## Goal\n- \n\n## Deliverable\n- \n\n## Notes\n- \n"
+                          }
+                      ]
+}

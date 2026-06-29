@@ -1,0 +1,57 @@
+{
+    "id":  "content-creative",
+    "label":  "Content \u0026 Creative",
+    "description":  "A creative production workspace from ideation to publication and post-release analytics.",
+    "defaultRootFolder":  "my-creative-studio",
+    "folders":  [
+                    "ideas",
+                    "pipeline/drafts",
+                    "pipeline/review",
+                    "pipeline/published",
+                    "assets/images",
+                    "assets/audio",
+                    "research",
+                    "calendar",
+                    "analytics"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "overview.md",
+                          "content":  "# Content \u0026 Creative Workspace\n\n## Current Themes\n- \n\n## In Production\n- \n\n## Distribution Plan\n- \n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "content-creative/ideas/_content-idea-template.md",
+                              "content":  "---\ntype: content-idea\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: seed\ntags:\n  - content/idea\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"core content idea\"\n  - \"target audience pain point\"\n---\n\n# Idea: {{title}}\n\n## Audience\n- \n\n## Problem / Desire\n- \n\n## Unique Angle\n- \n\n## Format and Channel\n- \n\n## Validation Signal\n- \n"
+                          },
+                          {
+                              "path":  "content-creative/pipeline/drafts/_draft-template.md",
+                              "content":  "---\ntype: content-draft\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - content/draft\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"main argument in draft\"\n  - \"call to action\"\n---\n\n# Draft: {{title}}\n\n## Hook\n- \n\n## Outline\n- \n\n## Body\n- \n\n## CTA\n- \n\n## Evidence / References\n- \n"
+                          },
+                          {
+                              "path":  "content-creative/pipeline/review/_review-template.md",
+                              "content":  "---\ntype: content-review\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: review\ntags:\n  - content/review\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"review feedback summary\"\n  - \"required edits\"\n---\n\n# Review: {{title}}\n\n## Reviewer Notes\n- \n\n## Strengths\n- \n\n## Required Edits\n- [ ] \n\n## Nice-to-have Edits\n- \n\n## Approval Status\n- \n"
+                          },
+                          {
+                              "path":  "content-creative/pipeline/published/_published-template.md",
+                              "content":  "---\ntype: published-content\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: published\ntags:\n  - content/published\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"published content summary\"\n  - \"distribution outcomes\"\n---\n\n# Published: {{title}}\n\n## Publish Details\n- Date:\n- Channel:\n- URL:\n\n## Final Summary\n- \n\n## Distribution Notes\n- \n\n## Follow-up Content\n- \n"
+                          },
+                          {
+                              "path":  "content-creative/calendar/_content-calendar-template.md",
+                              "content":  "---\ntype: content-calendar\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - content/calendar\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"content schedule\"\n  - \"upcoming publication dates\"\n---\n\n# Content Calendar: {{month}}\n\n| Date | Piece | Channel | Owner | Status |\n| --- | --- | --- | --- | --- |\n"
+                          },
+                          {
+                              "path":  "content-creative/research/_creative-research-template.md",
+                              "content":  "---\ntype: content-research\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - content/research\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"research insight for content\"\n  - \"supporting source\"\n---\n\n# Research: {{topic}}\n\n## Question\n- \n\n## Sources\n- \n\n## Audience Insight\n- \n\n## Applicable Angles\n- \n"
+                          },
+                          {
+                              "path":  "content-creative/assets/images/_image-asset-template.md",
+                              "content":  "---\ntype: creative-asset\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - content/asset\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"asset brief\"\n  - \"usage context\"\n---\n\n# Asset Brief: {{asset-name}}\n\n## Asset Type\n- Image | Audio | Video | Graphic\n\n## Purpose\n- \n\n## Usage Context\n- \n\n## Requirements\n- Size:\n- Tone:\n- Deadline:\n"
+                          },
+                          {
+                              "path":  "content-creative/analytics/_performance-template.md",
+                              "content":  "---\ntype: content-analytics\ntheme: content-creative\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - content/analytics\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"performance metrics\"\n  - \"next optimization actions\"\n---\n\n# Performance Review: {{period}}\n\n## Top Metrics\n- Reach:\n- Engagement:\n- Conversion:\n\n## Winners and Losers\n- \n\n## Hypotheses\n- \n\n## Next Experiments\n- [ ] \n"
+                          }
+                      ]
+}

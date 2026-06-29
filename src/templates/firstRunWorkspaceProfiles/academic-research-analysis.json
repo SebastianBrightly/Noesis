@@ -1,0 +1,63 @@
+{
+    "id":  "academic-research-analysis",
+    "label":  "Academic Research \u0026 Analysis",
+    "description":  "A research-oriented structure with source ingestion, synthesis notes, and output artifacts.",
+    "defaultRootFolder":  "my-research",
+    "folders":  [
+                    "raw/articles",
+                    "raw/papers",
+                    "raw/repos",
+                    "raw/data",
+                    "raw/images",
+                    "raw/assets",
+                    "wiki/concepts",
+                    "wiki/entities",
+                    "wiki/sources",
+                    "wiki/comparisons",
+                    "outputs"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "wiki/index.md",
+                          "content":  "# Research Index\n\nGenerated catalog for ingested knowledge artifacts.\n\n## Sources\n- Add or refresh source summaries under wiki/sources/ and list them here.\n\n## Concepts\n- Track concept pages under wiki/concepts/.\n"
+                      },
+                      {
+                          "path":  "wiki/log.md",
+                          "content":  "# Ingest Log\n\nAppend-only chronological record of indexing and synthesis runs.\n\n| Date | Action | Input | Output | Notes |\n| --- | --- | --- | --- | --- |\n"
+                      },
+                      {
+                          "path":  "wiki/overview.md",
+                          "content":  "# Project Overview\n\n## Goals\n- Define what this research workspace is trying to answer.\n\n## Current Focus\n- Capture active hypotheses, blockers, and next experiments.\n\n## Retrieval Notes\n- Keep this note short so it can be used as high-signal RAG context.\n"
+                      },
+                      {
+                          "path":  "CLAUDE.md",
+                          "content":  "# Research Schema\n\nUse this schema when generating or updating markdown in this workspace.\n\n## Folder Contract\n- raw/: immutable source material\n- wiki/: generated knowledge notes and summaries\n- outputs/: final artifacts, reports, and presentations\n\n## Source Summary Template\n- Source metadata (title, author, url, date)\n- Abstract in 5-8 bullets\n- Key entities and concepts with links\n- Evidence quality notes\n\n## Comparison Template\n- Scope\n- Similarities\n- Differences\n- Decision guidance\n\n## Style\n- Prefer concise markdown with links between pages.\n- Keep paragraphs short for chunk-friendly retrieval.\n"
+                      },
+                      {
+                          "path":  ".gitignore",
+                          "content":  "# Binary/raw artifacts\nraw/data/\nraw/assets/\nraw/images/\n\n# Local exports\noutputs/*.pdf\noutputs/*.pptx\noutputs/*.docx\n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "academic-research-analysis/wiki/sources/_source-template.md",
+                              "content":  "---\ntype: research-source\ntheme: academic-research-analysis\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - research/source\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"main claim of source\"\n  - \"strongest supporting evidence\"\n---\n\n# Source: {{title}}\n\n## Metadata\n- Author:\n- URL:\n- Date:\n- Venue:\n- Domain:\n\n## Research Question\n- \n\n## Key Claims\n- \n\n## Methods / Approach\n- \n\n## Evidence Quality\n- Strengths:\n- Weaknesses:\n\n## Extracted Facts\n- \n\n## Linked Concepts\n- [[wiki/concepts/{{concept-name}}]]\n\n## Linked Entities\n- [[wiki/entities/{{entity-name}}]]\n"
+                          },
+                          {
+                              "path":  "academic-research-analysis/wiki/concepts/_concept-template.md",
+                              "content":  "---\ntype: research-concept\ntheme: academic-research-analysis\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - research/concept\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"definition of concept\"\n  - \"how concept is measured\"\n---\n\n# Concept: {{name}}\n\n## Definition\n- \n\n## Why It Matters\n- \n\n## Operationalization\n- Metric:\n- Units:\n- Caveats:\n\n## Related Entities\n- [[wiki/entities/{{entity-name}}]]\n\n## Source Links\n- [[wiki/sources/{{source-name}}]]\n"
+                          },
+                          {
+                              "path":  "academic-research-analysis/wiki/entities/_entity-template.md",
+                              "content":  "---\ntype: research-entity\ntheme: academic-research-analysis\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - research/entity\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"entity role in domain\"\n  - \"entity relationships\"\n---\n\n# Entity: {{name}}\n\n## Type\n- Person | Organization | Tool | Dataset\n\n## Description\n- \n\n## Role in Research Context\n- \n\n## Relationships\n- [[wiki/concepts/{{concept-name}}]]\n\n## Supporting Sources\n- [[wiki/sources/{{source-name}}]]\n"
+                          },
+                          {
+                              "path":  "academic-research-analysis/wiki/comparisons/_comparison-template.md",
+                              "content":  "---\ntype: research-comparison\ntheme: academic-research-analysis\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - research/comparison\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"comparison criteria\"\n  - \"final recommendation and rationale\"\n---\n\n# Comparison: {{option-a}} vs {{option-b}}\n\n## Scope\n- \n\n## Criteria\n- \n\n## Similarities\n- \n\n## Differences\n- \n\n## Evidence Table\n| Criterion | {{option-a}} | {{option-b}} | Source |\n| --- | --- | --- | --- |\n\n## Recommendation\n- \n"
+                          },
+                          {
+                              "path":  "academic-research-analysis/outputs/_report-template.md",
+                              "content":  "---\ntype: research-report\ntheme: academic-research-analysis\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - research/output\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"executive summary findings\"\n  - \"recommended next actions\"\n---\n\n# Report: {{topic}}\n\n## Executive Summary\n- \n\n## Findings\n- \n\n## Confidence and Limitations\n- \n\n## Risks and Unknowns\n- \n\n## Next Actions\n- [ ] \n"
+                          }
+                      ]
+}

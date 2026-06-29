@@ -1,0 +1,54 @@
+{
+    "id":  "professional-operational",
+    "label":  "Professional \u0026 Operational",
+    "description":  "An execution-first workspace for delivery, planning, meetings, and operational cadence.",
+    "defaultRootFolder":  "my-professional-ops",
+    "folders":  [
+                    "operations/sops",
+                    "operations/meetings",
+                    "operations/retros",
+                    "projects/active",
+                    "projects/archive",
+                    "clients",
+                    "planning/quarterly",
+                    "planning/weekly",
+                    "reference",
+                    "outputs"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "overview.md",
+                          "content":  "# Professional \u0026 Operational Workspace\n\n## Quarterly Outcomes\n- \n\n## Active Projects\n- \n\n## Risks\n- \n\n## This Week\n- \n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "professional-operational/operations/meetings/_meeting-template.md",
+                              "content":  "---\ntype: meeting-note\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - ops/meeting\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"meeting decisions\"\n  - \"action items and owners\"\n---\n\n# Meeting: {{topic}}\n\n## Objective\n- \n\n## Attendees\n- \n\n## Discussion\n- \n\n## Decisions\n- \n\n## Action Items\n- [ ] Task - Owner:  - Due: \n\n## Risks\n- \n"
+                          },
+                          {
+                              "path":  "professional-operational/projects/active/_project-template.md",
+                              "content":  "---\ntype: project-note\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - ops/project\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"project scope and status\"\n  - \"current blockers\"\n---\n\n# Project: {{name}}\n\n## Objective\n- \n\n## Scope\n- In scope:\n- Out of scope:\n\n## Milestones\n- \n\n## Dependencies\n- \n\n## Status\n- Health:\n- Next checkpoint:\n\n## Open Risks\n- \n"
+                          },
+                          {
+                              "path":  "professional-operational/operations/sops/_sop-template.md",
+                              "content":  "---\ntype: sop\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - ops/sop\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"standard procedure\"\n  - \"step by step runbook\"\n---\n\n# SOP: {{process-name}}\n\n## Purpose\n- \n\n## Trigger\n- \n\n## Preconditions\n- \n\n## Procedure\n1. \n2. \n3. \n\n## Validation\n- \n\n## Escalation\n- \n"
+                          },
+                          {
+                              "path":  "professional-operational/operations/retros/_retro-template.md",
+                              "content":  "---\ntype: retrospective\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - ops/retro\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"what went well\"\n  - \"improvement actions\"\n---\n\n# Retrospective: {{period}}\n\n## Wins\n- \n\n## Problems\n- \n\n## Root Causes\n- \n\n## Improvements\n- [ ] \n\n## Owners and Dates\n- \n"
+                          },
+                          {
+                              "path":  "professional-operational/clients/_client-brief-template.md",
+                              "content":  "---\ntype: client-brief\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - ops/client\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"client priorities\"\n  - \"delivery commitments\"\n---\n\n# Client Brief: {{client-name}}\n\n## Context\n- \n\n## Goals\n- \n\n## Constraints\n- \n\n## Deliverables\n- \n\n## Communication Cadence\n- \n"
+                          },
+                          {
+                              "path":  "professional-operational/planning/weekly/_weekly-plan-template.md",
+                              "content":  "---\ntype: weekly-plan\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - ops/planning\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"weekly priorities\"\n  - \"top risks this week\"\n---\n\n# Weekly Plan: {{week}}\n\n## Top 3 Priorities\n- \n\n## Planned Deliverables\n- \n\n## Risks\n- \n\n## Mitigations\n- \n\n## Review Checkpoint\n- \n"
+                          },
+                          {
+                              "path":  "professional-operational/outputs/_status-report-template.md",
+                              "content":  "---\ntype: status-report\ntheme: professional-operational\ncreated: {{date}}\nupdated: {{date}}\nstatus: published\ntags:\n  - ops/report\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"status summary\"\n  - \"risks and asks\"\n---\n\n# Status Report: {{period}}\n\n## Executive Summary\n- \n\n## Progress\n- \n\n## Risks and Blockers\n- \n\n## Decisions Needed\n- \n\n## Next Week\n- \n"
+                          }
+                      ]
+}

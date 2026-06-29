@@ -1,0 +1,55 @@
+{
+    "id":  "personal-cognitive",
+    "label":  "Personal \u0026 Cognitive",
+    "description":  "A personal knowledge and reflection workspace for journal thinking, learning notes, and idea incubation.",
+    "defaultRootFolder":  "my-personal-cognitive",
+    "folders":  [
+                    "inbox",
+                    "journal/daily",
+                    "journal/weekly",
+                    "ideas",
+                    "knowledge/concepts",
+                    "knowledge/people",
+                    "projects/active",
+                    "projects/archive",
+                    "resources/books",
+                    "resources/articles",
+                    "outputs"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "overview.md",
+                          "content":  "# Personal \u0026 Cognitive Workspace\n\n## Focus\n- What are you trying to improve or understand right now?\n\n## Current Threads\n- \n\n## Weekly Review\n- Wins:\n- Lessons:\n- Next:\n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "personal-cognitive/journal/daily/_daily-template.md",
+                              "content":  "---\ntype: daily-note\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - personal/daily\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"main concern today\"\n  - \"important decision\"\n---\n\n# Daily Note: {{date}}\n\n## Intent\n- \n\n## Events\n- \n\n## Insights\n- \n\n## Emotional Signal\n- Mood:\n- Energy:\n- Stress:\n\n## Next Action\n- [ ] \n\n## Related Notes\n- [[journal/weekly/{{week}}]]\n"
+                          },
+                          {
+                              "path":  "personal-cognitive/ideas/_idea-template.md",
+                              "content":  "---\ntype: idea-note\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: seed\ntags:\n  - personal/idea\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"core idea\"\n  - \"first experiment\"\n---\n\n# Idea: {{title}}\n\n## Problem\n- \n\n## Core Insight\n- \n\n## Why This Matters\n- \n\n## First Experiment\n- [ ] \n\n## Evidence to Collect\n- \n\n## Related Concepts\n- [[knowledge/concepts/{{concept-name}}]]\n"
+                          },
+                          {
+                              "path":  "personal-cognitive/journal/weekly/_weekly-review-template.md",
+                              "content":  "---\ntype: weekly-review\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - personal/review\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"wins this week\"\n  - \"main blockers\"\n---\n\n# Weekly Review: {{week}}\n\n## Wins\n- \n\n## Friction\n- \n\n## Lessons\n- \n\n## Priorities Next Week\n- [ ] \n\n## Open Questions\n- \n"
+                          },
+                          {
+                              "path":  "personal-cognitive/knowledge/concepts/_concept-note-template.md",
+                              "content":  "---\ntype: concept-note\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - personal/concept\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"definition\"\n  - \"how to apply\"\n---\n\n# Concept: {{name}}\n\n## Definition\n- \n\n## Mental Model\n- \n\n## When to Use\n- \n\n## Failure Modes\n- \n\n## Linked Ideas\n- [[ideas/{{idea-name}}]]\n"
+                          },
+                          {
+                              "path":  "personal-cognitive/knowledge/people/_person-note-template.md",
+                              "content":  "---\ntype: person-note\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - personal/people\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"relationship context\"\n  - \"next follow-up\"\n---\n\n# Person: {{name}}\n\n## Context\n- \n\n## Important Details\n- \n\n## Last Interaction\n- \n\n## Follow-up\n- [ ] \n"
+                          },
+                          {
+                              "path":  "personal-cognitive/projects/active/_personal-project-template.md",
+                              "content":  "---\ntype: personal-project\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - personal/project\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"project objective\"\n  - \"current status\"\n---\n\n# Project: {{name}}\n\n## Outcome\n- \n\n## Constraints\n- \n\n## Current Milestone\n- \n\n## Tasks\n- [ ] \n\n## Reflection\n- \n"
+                          },
+                          {
+                              "path":  "personal-cognitive/resources/articles/_article-note-template.md",
+                              "content":  "---\ntype: resource-note\ntheme: personal-cognitive\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - personal/resource\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"key takeaway\"\n  - \"how to apply\"\n---\n\n# Resource: {{title}}\n\n## Source\n- Author:\n- URL:\n\n## Key Takeaways\n- \n\n## Application\n- \n\n## Related Notes\n- [[knowledge/concepts/{{concept-name}}]]\n"
+                          }
+                      ]
+}

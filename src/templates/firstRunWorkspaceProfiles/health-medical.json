@@ -1,0 +1,61 @@
+{
+    "id":  "health-medical",
+    "label":  "Health \u0026 Medical",
+    "description":  "A private health workspace for records, metrics, plans, and follow-up questions.",
+    "defaultRootFolder":  "my-health",
+    "folders":  [
+                    "records/labs",
+                    "records/visits",
+                    "metrics/sleep",
+                    "metrics/nutrition",
+                    "metrics/training",
+                    "plans/treatment",
+                    "questions",
+                    "research",
+                    "outputs"
+                ],
+    "baseFiles":  [
+                      {
+                          "path":  "overview.md",
+                          "content":  "# Health Workspace Overview\n\n## Current Priorities\n- \n\n## Upcoming Appointments\n- \n\n## Active Questions\n- \n"
+                      }
+                  ],
+    "templateFiles":  [
+                          {
+                              "path":  "health-medical/records/visits/_visit-template.md",
+                              "content":  "---\ntype: medical-visit\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/visit\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"visit outcomes\"\n  - \"follow up plan\"\n---\n\n# Visit: {{date}}\n\n## Provider\n- \n\n## Reason\n- \n\n## Findings\n- \n\n## Plan\n- \n\n## Follow-up\n- [ ] \n"
+                          },
+                          {
+                              "path":  "health-medical/metrics/sleep/_sleep-log-template.md",
+                              "content":  "---\ntype: health-metric\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/sleep\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"sleep quality trend\"\n  - \"factors impacting sleep\"\n---\n\n# Sleep Log: {{date}}\n\n## Duration\n- \n\n## Quality\n- \n\n## Sleep Window\n- Bedtime:\n- Wake time:\n\n## Notes\n- \n"
+                          },
+                          {
+                              "path":  "health-medical/records/labs/_lab-result-template.md",
+                              "content":  "---\ntype: lab-result\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/labs\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"abnormal lab values\"\n  - \"lab trend over time\"\n---\n\n# Lab Result: {{test-name}}\n\n## Test Details\n- Date:\n- Provider:\n\n## Values\n| Marker | Value | Range | Flag |\n| --- | --- | --- | --- |\n\n## Interpretation\n- \n\n## Follow-up\n- [ ] \n"
+                          },
+                          {
+                              "path":  "health-medical/metrics/nutrition/_nutrition-log-template.md",
+                              "content":  "---\ntype: health-metric\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/nutrition\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"nutrition intake\"\n  - \"diet adherence\"\n---\n\n# Nutrition Log: {{date}}\n\n## Intake Summary\n- Calories:\n- Protein:\n- Carbs:\n- Fat:\n\n## Notes\n- \n\n## Symptoms / Reactions\n- \n"
+                          },
+                          {
+                              "path":  "health-medical/metrics/training/_training-log-template.md",
+                              "content":  "---\ntype: health-metric\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/training\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"training session summary\"\n  - \"recovery indicators\"\n---\n\n# Training Log: {{date}}\n\n## Session\n- Type:\n- Duration:\n- Intensity:\n\n## Performance Notes\n- \n\n## Recovery\n- Sleep impact:\n- Soreness:\n"
+                          },
+                          {
+                              "path":  "health-medical/plans/treatment/_treatment-plan-template.md",
+                              "content":  "---\ntype: treatment-plan\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/plan\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"current treatment plan\"\n  - \"medication schedule\"\n---\n\n# Treatment Plan: {{condition}}\n\n## Goal\n- \n\n## Interventions\n- \n\n## Schedule\n- \n\n## Monitoring\n- \n\n## Questions for Provider\n- \n"
+                          },
+                          {
+                              "path":  "health-medical/questions/_health-question-template.md",
+                              "content":  "---\ntype: health-question\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: active\ntags:\n  - health/questions\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"health question context\"\n  - \"decision criteria\"\n---\n\n# Question: {{topic}}\n\n## Question\n- \n\n## Context\n- \n\n## What I Have Tried\n- \n\n## What I Need to Decide\n- \n"
+                          },
+                          {
+                              "path":  "health-medical/research/_health-research-template.md",
+                              "content":  "---\ntype: health-research\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - health/research\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"evidence summary\"\n  - \"clinical relevance\"\n---\n\n# Research Note: {{topic}}\n\n## Source\n- \n\n## Evidence Summary\n- \n\n## Applicability\n- \n\n## Caveats\n- \n"
+                          },
+                          {
+                              "path":  "health-medical/outputs/_health-summary-template.md",
+                              "content":  "---\ntype: health-summary\ntheme: health-medical\ncreated: {{date}}\nupdated: {{date}}\nstatus: draft\ntags:\n  - health/output\naliases: []\nsummary: \"\"\nretrieval_queries:\n  - \"health summary highlights\"\n---\n\n# Health Summary: {{period}}\n\n## Key Changes\n- \n\n## Metrics Snapshot\n- \n\n## Open Concerns\n- \n\n## Next Actions\n- [ ] \n"
+                          }
+                      ]
+}
