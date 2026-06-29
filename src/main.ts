@@ -10,6 +10,7 @@ import { ReactView, createPluginRoot } from '@/ReactView';
 import React from "react";
 import { SettingsPage } from '@/utils/SettingsPage';
 import { EditorNativeActionsService } from './services/EditorNativeActionsService';
+import { AutoTagService } from './services/AutoTagService';
 import { DEFAULT_RESPONSE_NOTE_TEMPLATE } from './utils/TemplateVariableRenderer';
 
 
@@ -126,6 +127,8 @@ export interface LocalLLMSettings {
 	researchWorkspaceRoot?: string;
 	enableResponseNoteTemplate?: boolean;
 	responseNoteTemplate?: string;
+	autoTagDictionary?: string[];
+	autoTagWorkload?: 'small' | 'medium' | 'large';
 }
 
 export const DEFAULT_SETTINGS: LocalLLMSettings = {
@@ -190,7 +193,9 @@ export const DEFAULT_SETTINGS: LocalLLMSettings = {
 	hasCompletedFirstRunWizard: false,
 	researchWorkspaceRoot: 'my-research',
 	enableResponseNoteTemplate: true,
-	responseNoteTemplate: DEFAULT_RESPONSE_NOTE_TEMPLATE
+	responseNoteTemplate: DEFAULT_RESPONSE_NOTE_TEMPLATE,
+	autoTagDictionary: [],
+	autoTagWorkload: 'medium'
 };
 //Should group these as a single object
 const REVIEW_PROMPT_THRESHOLD_MS = 60 * 60 * 1000;
@@ -206,6 +211,7 @@ export default class LocalLLMPlugin extends Plugin {
 	private reviewPromptPending = false;
 	private persistentLogFilePath: string | null = null;
 	private editorNativeActionsService: EditorNativeActionsService | null = null;
+	private autoTagService: AutoTagService | null = null;
 
 	async onload() {
 		this.setupPersistentLogging();
@@ -235,6 +241,9 @@ export default class LocalLLMPlugin extends Plugin {
 
 		this.editorNativeActionsService = new EditorNativeActionsService(this);
 		this.editorNativeActionsService.register();
+
+		this.autoTagService = new AutoTagService(this);
+		this.autoTagService.register();
 
 		// Initialize RAG service (always enabled with auto-maintenance)
 		this.ragService = new RAGService(this.app, this.manifest, {
@@ -424,6 +433,24 @@ export default class LocalLLMPlugin extends Plugin {
 
 		if (typeof this.settings.scopeQuery !== 'string') {
 			this.settings.scopeQuery = DEFAULT_SETTINGS.scopeQuery;
+			needsMigrationSave = true;
+		}
+
+		if (!Array.isArray(this.settings.autoTagDictionary)) {
+			const rawDictionary = (this.settings as any).autoTagDictionary;
+			if (typeof rawDictionary === 'string') {
+				this.settings.autoTagDictionary = rawDictionary
+					.split('\n')
+					.map((entry: string) => entry.trim())
+					.filter((entry: string) => entry.length > 0);
+			} else {
+				this.settings.autoTagDictionary = DEFAULT_SETTINGS.autoTagDictionary;
+			}
+			needsMigrationSave = true;
+		}
+
+		if (this.settings.autoTagWorkload !== 'small' && this.settings.autoTagWorkload !== 'medium' && this.settings.autoTagWorkload !== 'large') {
+			this.settings.autoTagWorkload = DEFAULT_SETTINGS.autoTagWorkload;
 			needsMigrationSave = true;
 		}
 

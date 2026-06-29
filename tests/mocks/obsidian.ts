@@ -142,6 +142,27 @@ export class Notice {
   }
 }
 
+export class Modal {
+  app: any;
+  contentEl: HTMLElement;
+
+  constructor(app: any) {
+    this.app = app;
+    this.contentEl = document.createElement('div');
+  }
+
+  open() {
+    this.onOpen();
+  }
+
+  close() {
+    this.onClose();
+  }
+
+  onOpen() {}
+  onClose() {}
+}
+
 export class TFile {}
 export class Events {}
 export class ProgressBarComponent {}

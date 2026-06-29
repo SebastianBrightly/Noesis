@@ -875,6 +875,67 @@ export class RAGService {
 		return chunks;
 	}
 
+	private toNormalizedStringList(value: unknown): string[] {
+		if (Array.isArray(value)) {
+			return value
+				.filter((entry): entry is string => typeof entry === 'string')
+				.map((entry) => entry.trim())
+				.filter((entry) => entry.length > 0);
+		}
+
+		if (typeof value === 'string') {
+			return value
+				.split(/[\n,]/)
+				.map((entry) => entry.trim())
+				.filter((entry) => entry.length > 0);
+		}
+
+		return [];
+	}
+
+	private appendRetrievalMetadataSignals(content: string, metadata: any): string {
+		if (!metadata?.frontmatter) {
+			return content;
+		}
+
+		const frontmatter = metadata.frontmatter as Record<string, unknown>;
+		const lines: string[] = [];
+
+		const tags = this.toNormalizedStringList(frontmatter.tags);
+		if (tags.length > 0) {
+			lines.push(`tags: ${tags.join(', ')}`);
+		}
+
+		const aliases = this.toNormalizedStringList(frontmatter.aliases);
+		if (aliases.length > 0) {
+			lines.push(`aliases: ${aliases.join(', ')}`);
+		}
+
+		const ragQueries = this.toNormalizedStringList(frontmatter.noesisRagQueries);
+		if (ragQueries.length > 0) {
+			lines.push(`retrieval-queries: ${ragQueries.join(' | ')}`);
+		}
+
+		const ragSummary = typeof frontmatter.noesisRagSummary === 'string'
+			? frontmatter.noesisRagSummary.trim()
+			: '';
+		if (ragSummary.length > 0) {
+			lines.push(`retrieval-summary: ${ragSummary}`);
+		}
+
+		if (lines.length === 0) {
+			return content;
+		}
+
+		const metadataBlock = [
+			'',
+			'## Noesis Retrieval Metadata',
+			...lines
+		].join('\n');
+
+		return `${content}${metadataBlock}`;
+	}
+
 	/**
 	 * Check if a line represents a natural break point
 	 */
@@ -2448,8 +2509,11 @@ export class RAGService {
 	private async updateFileEmbeddings(file: TFile): Promise<void> {
 		try {
 			const content = await this.app.vault.read(file);
-			const contentForIndexing = appendStudySignalsForIndexing(content);
 			const metadata = this.app.metadataCache.getFileCache(file);
+			const contentForIndexing = this.appendRetrievalMetadataSignals(
+				appendStudySignalsForIndexing(content),
+				metadata
+			);
 			const title = this.getFileTitle(file, metadata);
 
 			// Calculate checksum from binary content
@@ -2513,8 +2577,11 @@ export class RAGService {
 	private async updateFileEmbeddingsWithProgress(file: TFile, progressCallback?: (chunkIndex: number, totalChunks: number) => void): Promise<void> {
 		try {
 			const content = await this.app.vault.read(file);
-			const contentForIndexing = appendStudySignalsForIndexing(content);
 			const metadata = this.app.metadataCache.getFileCache(file);
+			const contentForIndexing = this.appendRetrievalMetadataSignals(
+				appendStudySignalsForIndexing(content),
+				metadata
+			);
 			const title = this.getFileTitle(file, metadata);
 
 			// Calculate checksum from binary content

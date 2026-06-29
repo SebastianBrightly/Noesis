@@ -76,6 +76,7 @@ export class SettingsPage extends PluginSettingTab
 		makeTab('LLM Config', (el, s) => this.visualizeSettings_LLMConfig(el, s));
 		makeTab('System Prompt', (el, s) => this.visualizeSettings_SystemPrompt(el, s));
 		makeTab('Templates', (el, s) => this.visualizeSettings_Templates(el, s));
+		makeTab('Auto Tag', (el, s) => this.visualizeSettings_AutoTag(el, s));
 		// add more tabs as needed:
 		//makeTab('Search', (el, s) => this.visualizeSettings_Search(el, s));
 		makeTab('RAG', (el, s) => this.visualizeSettings_RAG(el, s));
@@ -87,6 +88,43 @@ export class SettingsPage extends PluginSettingTab
 
 
 
+	}
+
+	private visualizeSettings_AutoTag(containerEl: HTMLElement, LocalLLMSettings: any): void {
+		new Setting(containerEl).setName('Auto Tag').setHeading();
+
+		new Setting(containerEl)
+			.setName('User-defined tag dictionary')
+			.setDesc('One tag per line. Auto Tag will still generate tags, but will prefer adding relevant tags from this dictionary when appropriate.')
+			.addTextArea(text => text
+				.setPlaceholder('project/research\nml/embedding\nmeeting-notes')
+				.setValue((this.plugin.settings.autoTagDictionary || []).join('\n'))
+				.then((text) => {
+					text.inputEl.rows = 8;
+					text.inputEl.addClass('local-llm-exclusion-textarea');
+					text.inputEl.addClass('local-llm-exclusion-textarea-large');
+				})
+				.onChange(async (value) => {
+					this.plugin.settings.autoTagDictionary = this.parseMultilineList(value);
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Auto tag workload')
+			.setDesc('Controls how many notes are processed per chunk during folder auto-tag runs.')
+			.addDropdown(dropdown => dropdown
+				.addOption('small', 'Small chunks (more responsive, lower burst load)')
+				.addOption('medium', 'Medium chunks (balanced)')
+				.addOption('large', 'Large chunks (faster throughput, higher burst load)')
+				.setValue(this.plugin.settings.autoTagWorkload || 'medium')
+				.onChange(async (value) => {
+					if (value !== 'small' && value !== 'medium' && value !== 'large') {
+						return;
+					}
+
+					this.plugin.settings.autoTagWorkload = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 
 	private visualizeSettings_Templates(containerEl: HTMLElement, LocalLLMSettings: any): void {
