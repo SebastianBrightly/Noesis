@@ -1322,6 +1322,10 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 	user-select: text;
 }
 
+.local-llm-folder-scope-label {
+	display: block;
+}
+
 /* RAG Progress Floating Dialog Styles */
 .rag-progress-floating-dialog {
 	position: fixed !important;
@@ -1441,6 +1445,14 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 
 .rag-progress-buttons button.mod-cta:hover {
 	background: var(--interactive-accent-hover);
+}
+
+.rag-progress-button-hidden {
+	display: none !important;
+}
+
+.rag-progress-button-inline {
+	display: inline-block;
 }
 
 /* Animation for smooth entry */

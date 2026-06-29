@@ -3,8 +3,6 @@ import { App } from 'obsidian';
 import initSqlJs from '@webreflection/sql.js';
 // @ts-ignore
 import sqlWasm from 'sql.js/dist/sql-wasm.wasm';
-import * as path from 'path';
-import * as fs from 'fs';
 import { MigrationRunner } from './MigrationRunner';
 
 export interface VectorDocument {
@@ -50,15 +48,45 @@ export class UnifiedVectorDatabase {
 		this.dbPath = dbPath;
 	}
 
+	private sanitizeVaultPath(pathValue: string): string {
+		return pathValue.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+	}
+
+	private getParentPath(pathValue: string): string {
+		const normalized = this.sanitizeVaultPath(pathValue);
+		const lastSlash = normalized.lastIndexOf('/');
+		return lastSlash >= 0 ? normalized.slice(0, lastSlash) : '';
+	}
+
+	private async ensureFolder(folderPath: string): Promise<void> {
+		const normalized = this.sanitizeVaultPath(folderPath);
+		if (!normalized) {
+			return;
+		}
+
+		if (await this.app.vault.adapter.exists(normalized)) {
+			return;
+		}
+
+		const segments = normalized.split('/').filter(segment => segment.length > 0);
+		let current = '';
+		for (const segment of segments) {
+			current = current ? `${current}/${segment}` : segment;
+			if (!(await this.app.vault.adapter.exists(current))) {
+				await this.app.vault.adapter.mkdir(current);
+			}
+		}
+	}
+
 	/**
 	 * Initialize the database connection and create tables if needed
 	 */
 	async load(): Promise<void> {
 		try {
 			// Ensure the directory exists
-			const dbDir = path.dirname(this.dbPath);
-			if (!fs.existsSync(dbDir)) {
-				fs.mkdirSync(dbDir, { recursive: true });
+			const dbDir = this.getParentPath(this.dbPath);
+			if (!(await this.app.vault.adapter.exists(dbDir))) {
+				await this.ensureFolder(dbDir);
 				LoggingUtility.log(`Created database directory: ${dbDir}`);
 			}
 
@@ -70,8 +98,9 @@ export class UnifiedVectorDatabase {
 
 			// Load database if it exists, otherwise create new
 			let dbFile;
-			if (fs.existsSync(this.dbPath)) {
-				dbFile = fs.readFileSync(this.dbPath);
+			if (await this.app.vault.adapter.exists(this.dbPath)) {
+				const buffer = await this.app.vault.adapter.readBinary(this.dbPath);
+				dbFile = new Uint8Array(buffer);
 			}
 			this.db = new SQL.Database(dbFile);
 
@@ -489,10 +518,7 @@ export class UnifiedVectorDatabase {
 		// Get database file size
 		let sizeInBytes = 0;
 		try {
-			if (fs.existsSync(this.dbPath)) {
-				const stats = fs.statSync(this.dbPath);
-				sizeInBytes = stats.size;
-			}
+			sizeInBytes = this.db.export().byteLength;
 		} catch (error) {
 			LoggingUtility.warn('Could not get database file size:', error);
 		}
@@ -698,8 +724,8 @@ export class UnifiedVectorDatabase {
 			do {
 				this.saveQueued = false;
 				const data = this.db!.export();
-				const buffer = Buffer.from(data);
-				await fs.promises.writeFile(this.dbPath, buffer);
+				const binary = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+				await this.app.vault.adapter.writeBinary(this.dbPath, binary);
 			} while (this.saveQueued);
 		})();
 

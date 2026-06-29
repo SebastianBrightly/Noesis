@@ -816,16 +816,14 @@ class FolderAutoTagConfirmationModal extends Modal {
 		const scopeWrapper = contentEl.createDiv();
 		scopeWrapper.createEl('p', { text: 'Choose scope:' });
 
-		const directScopeLabel = scopeWrapper.createEl('label');
-		directScopeLabel.style.display = 'block';
+		const directScopeLabel = scopeWrapper.createEl('label', { cls: 'local-llm-folder-scope-label' });
 		const directScopeInput = directScopeLabel.createEl('input', {
 			attr: { type: 'radio', name: 'noesis-folder-scope' }
 		});
 		directScopeInput.checked = true;
 		directScopeLabel.appendText(` This folder only (${this.options.directNoteCount} note(s))`);
 
-		const recursiveScopeLabel = scopeWrapper.createEl('label');
-		recursiveScopeLabel.style.display = 'block';
+		const recursiveScopeLabel = scopeWrapper.createEl('label', { cls: 'local-llm-folder-scope-label' });
 		const recursiveScopeInput = recursiveScopeLabel.createEl('input', {
 			attr: { type: 'radio', name: 'noesis-folder-scope' }
 		});

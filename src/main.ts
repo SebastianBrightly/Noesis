@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, Notice, DropdownComponent, FileSystemAdapter, TAbstractFile } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, Notice, DropdownComponent, TAbstractFile } from 'obsidian';
 import { ChatView } from './views/ChatView';
 import { LoggingUtility } from './utils/LoggingUtility';
 import { RAGService } from './services/RAGService';
@@ -232,7 +232,7 @@ export default class LocalLLMPlugin extends Plugin {
 	private autoTagService: AutoTagService | null = null;
 
 	async onload() {
-		this.setupPersistentLogging();
+		await this.setupPersistentLogging();
 		this.registerGlobalErrorLogging();
 		LoggingUtility.initialize();
 
@@ -379,33 +379,37 @@ export default class LocalLLMPlugin extends Plugin {
 		LoggingUtility.setFileLogger(null);
 	}
 
-	private setupPersistentLogging() {
+	private sanitizeVaultPath(pathValue: string): string {
+		return pathValue.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+	}
+
+	private async ensureFolder(folderPath: string): Promise<void> {
+		const normalized = this.sanitizeVaultPath(folderPath);
+		if (!normalized || await this.app.vault.adapter.exists(normalized)) {
+			return;
+		}
+
+		const segments = normalized.split('/').filter(segment => segment.length > 0);
+		let current = '';
+		for (const segment of segments) {
+			current = current ? `${current}/${segment}` : segment;
+			if (!(await this.app.vault.adapter.exists(current))) {
+				await this.app.vault.adapter.mkdir(current);
+			}
+		}
+	}
+
+	private async setupPersistentLogging() {
 		try {
-			if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
-				LoggingUtility.setFileLogger(null);
-				return;
-			}
-
-			const nodeRequire = (window as unknown as { require?: (name: string) => any }).require;
-			if (!nodeRequire) {
-				LoggingUtility.setFileLogger(null);
-				return;
-			}
-
-			const fs = nodeRequire('fs');
-			const path = nodeRequire('path');
-
-			const vaultPath = this.app.vault.adapter.getBasePath();
-			const logDir = path.join(vaultPath, '.obsidian', 'plugins', this.manifest.id, 'logs');
-			const logPath = path.join(logDir, 'noesis.log.txt');
-			fs.mkdirSync(logDir, { recursive: true });
+			const configDir = this.sanitizeVaultPath(this.app.vault.configDir || '.obsidian');
+			const logDir = `${configDir}/plugins/${this.manifest.id}/logs`;
+			const logPath = `${logDir}/noesis.log.txt`;
+			await this.ensureFolder(logDir);
 			this.persistentLogFilePath = logPath;
 
 			LoggingUtility.setFileLogger((line: string) => {
-				fs.appendFile(logPath, `${line}\n`, { encoding: 'utf8' }, (error: unknown) => {
-					if (error) {
-						console.error('Failed to append plugin log file:', error);
-					}
+				void this.app.vault.adapter.append(logPath, `${line}\n`).catch((error: unknown) => {
+					console.error('Failed to append plugin log file:', error);
 				});
 			});
 

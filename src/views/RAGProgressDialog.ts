@@ -79,9 +79,8 @@ export class RAGProgressDialog {
 		// Close button (hidden initially)
 		this.closeButton = buttonContainer.createEl('button', {
 			text: 'Close',
-			cls: 'mod-cta'
+			cls: 'mod-cta rag-progress-button-hidden'
 		});
-		this.closeButton.style.display = 'none';
 		
 		this.closeButton.addEventListener('click', () => {
 			this.close();
@@ -209,8 +208,9 @@ export class RAGProgressDialog {
 		this.messageEl.setText(message || 'Complete!');
 		
 		// Hide cancel button, show close button
-		this.cancelButton.style.display = 'none';
-		this.closeButton.style.display = 'inline-block';
+		this.cancelButton.classList.add('rag-progress-button-hidden');
+		this.closeButton.classList.remove('rag-progress-button-hidden');
+		this.closeButton.classList.add('rag-progress-button-inline');
 		
 		// Auto-close after 5 seconds
 		setTimeout(() => {
@@ -231,8 +231,9 @@ export class RAGProgressDialog {
 		this.messageEl.classList.add('error');
 		
 		// Hide cancel button, show close button
-		this.cancelButton.style.display = 'none';
-		this.closeButton.style.display = 'inline-block';
+		this.cancelButton.classList.add('rag-progress-button-hidden');
+		this.closeButton.classList.remove('rag-progress-button-hidden');
+		this.closeButton.classList.add('rag-progress-button-inline');
 	}
 
 	/**

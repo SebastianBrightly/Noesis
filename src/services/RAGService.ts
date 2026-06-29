@@ -1,11 +1,10 @@
-import { App, TFile, EventRef, Events, Notice, ProgressBarComponent, Plugin, FileSystemAdapter, PluginManifest } from 'obsidian';
+import { App, TFile, EventRef, Events, Notice, ProgressBarComponent, Plugin, PluginManifest } from 'obsidian';
 import { UnifiedVectorDatabase, VectorSearchResult, VectorDocument } from '../db/UnifiedVectorDatabase';
 import { LoggingUtility } from '../utils/LoggingUtility';
 import { SearchResult } from './SearchService';
 import { EmbeddingService, EmbeddingConfig } from './EmbeddingService';
 import { ImageTextExtractor } from './ImageTextExtractor';
 import * as CRC32 from 'crc-32';
-import * as path from 'path';
 import { SettingsManager } from './SettingsManager';
 import { LocalLLMSettings } from '../main';
 import { appendStudySignalsForIndexing } from '../utils/StudyMarkupUtils';
@@ -117,27 +116,12 @@ export class RAGService {
 	constructor(app: App, manifest: PluginManifest, embeddingConfig: EmbeddingConfig, initOptions: RAGInitializationOptions = {}) {
 		this.app = app;
 
-		// Construct the database path in the plugin's data directory
-		// Get vault root using FileSystemAdapter.getBasePath() for absolute path
-		const configDir = this.app.vault.configDir; // e.g., ".obsidian"
+		// Keep the DB path vault-relative so we can use adapter APIs without direct Node fs access.
+		const configDir = this.app.vault.configDir.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '') || '.obsidian';
 		const pluginFolderName = manifest.id;
-
-		// Get the absolute vault root path
-		const adapter = this.app.vault.adapter;
-		let vaultRoot: string;
-
-		if (adapter instanceof FileSystemAdapter) {
-			// Desktop: use getBasePath() to get absolute vault root
-			vaultRoot = adapter.getBasePath();
-		} else {
-			// Mobile or other adapter: configDir should already be absolute, or we need a fallback
-			// For now, try to use configDir as-is if it's absolute, otherwise resolve it
-			vaultRoot = path.isAbsolute(configDir) ? path.dirname(configDir) : path.resolve('.').replace(/\.obsidian.*$/, '');
-		}
-
-		// Construct the full path to the database
-		const absoluteConfigDir = path.join(vaultRoot, configDir);
-		const dbPath = path.join(absoluteConfigDir, 'plugins', pluginFolderName, 'vector-index', 'embeddings.db');
+		const dbPath = `${configDir}/plugins/${pluginFolderName}/vector-index/embeddings.db`;
+		const adapterWithBasePath = this.app.vault.adapter as { getBasePath?: () => string };
+		const vaultRoot = typeof adapterWithBasePath.getBasePath === 'function' ? adapterWithBasePath.getBasePath() : '';
 		this.vaultRootPathNormalized = this.normalizePathForMatching(vaultRoot);
 
 		LoggingUtility.log('RAGService constructor called with dbPath:', dbPath);
