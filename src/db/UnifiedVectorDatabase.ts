@@ -667,19 +667,22 @@ export class UnifiedVectorDatabase {
 
 		// Get all file paths from database
 		const stmt = this.db.prepare('SELECT DISTINCT file_path FROM documents');
-		const rows: any[] = [];
+		const rows: Array<{ file_path: string }> = [];
 		while (stmt.step()) {
-			rows.push(stmt.getAsObject());
+			const row = stmt.getAsObject() as { file_path?: unknown };
+			if (typeof row.file_path === 'string') {
+				rows.push({ file_path: row.file_path });
+			}
 		}
 		stmt.free();
 
-		const dbFilePaths = new Set(rows.map((row: any) => row.file_path));
+		const dbFilePaths = new Set(rows.map((row) => row.file_path));
 
 		// Find files that exist in database but not in file system
 		const filesToRemove: string[] = [];
 		for (const dbFilePath of dbFilePaths) {
-			if (!existingFiles.has(dbFilePath as string)) {
-				filesToRemove.push(dbFilePath as string);
+			if (!existingFiles.has(dbFilePath)) {
+				filesToRemove.push(dbFilePath);
 			}
 		}
 

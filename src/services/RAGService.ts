@@ -1157,8 +1157,8 @@ export class RAGService {
 
 			// Check if the active view is a markdown view with this file
 			if (activeLeaf.view.getViewType() === 'markdown') {
-				const activeFile = (activeLeaf.view as any).file;
-				return activeFile && activeFile.path === file.path;
+				const activeFile = (activeLeaf.view as { file?: { path?: string } }).file;
+				return activeFile?.path === file.path;
 			}
 
 			return false;
@@ -2731,13 +2731,20 @@ export class RAGService {
 	/**
 	 * Get file title from metadata
 	 */
-	private getFileTitle(file: TFile, metadata: any): string {
-		if (metadata?.frontmatter?.title) {
-			return metadata.frontmatter.title;
+	private getFileTitle(file: TFile, metadata: unknown): string {
+		const title = (metadata as { frontmatter?: { title?: unknown } } | null | undefined)?.frontmatter?.title;
+		if (typeof title === 'string' && title.length > 0) {
+			return title;
 		}
-		if (metadata?.headings && metadata.headings.length > 0) {
-			return metadata.headings[0].heading;
+
+		const headings = (metadata as { headings?: Array<{ heading?: unknown }> } | null | undefined)?.headings;
+		if (Array.isArray(headings) && headings.length > 0) {
+			const heading = headings[0]?.heading;
+			if (typeof heading === 'string' && heading.length > 0) {
+				return heading;
+			}
 		}
+
 		return file.basename;
 	}
 

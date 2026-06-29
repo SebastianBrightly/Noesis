@@ -392,7 +392,9 @@ export class SettingsPage extends PluginSettingTab
 			dropdown.selectEl.empty();
 
 			if (models.length > 0) {
-				models.forEach(model => dropdown.addOption(model, model));
+				models.forEach((model) => {
+					dropdown.addOption(model, model);
+				});
 
 				if (models.includes(currentOrDefaultModel)) {
 					dropdown.setValue(currentOrDefaultModel);

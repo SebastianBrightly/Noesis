@@ -209,8 +209,8 @@ export class ChatView extends ItemView {
 			attr: { 'aria-label': 'Copy conversation', 'type': 'button' }
 		});
 		setIcon(copyConvButton, 'clipboard');
-		copyConvButton.addEventListener('click', async () => {
-			await this.copyEntireConversation();
+		copyConvButton.addEventListener('click', () => {
+			this.copyEntireConversation();
 		});
 
 		// Summarize and save button - shows inline preview then allows saving
@@ -921,17 +921,30 @@ export class ChatView extends ItemView {
 			}
 
 			// Create streaming callback
-			const streamCallback: StreamCallback = async (chunk: string, isComplete: boolean) => {
+			const streamCallback: StreamCallback = (chunk: string, isComplete: boolean): void => {
 				if (isComplete) {
-					// Finalize the message
-					await this.finalizeStreamingMessage(assistantMessage.id);
 					this.isStreaming = false;
 					this.setSendButtonEnabled(true);
 					this.showStopButton(false);
 					this.currentAbortController = null;
+
+					// Finalize without returning a Promise from the callback.
+					void this.finalizeStreamingMessage(assistantMessage.id).catch((error) => {
+						this.handleStreamingError(assistantMessage.id, error as Error);
+						this.isStreaming = false;
+						this.setSendButtonEnabled(true);
+						this.showStopButton(false);
+						this.currentAbortController = null;
+					});
 				} else {
-					// Update the streaming message
-					await this.updateStreamingMessage(assistantMessage.id, chunk);
+					// Update the streaming message without returning a Promise.
+					void this.updateStreamingMessage(assistantMessage.id, chunk).catch((error) => {
+						this.handleStreamingError(assistantMessage.id, error as Error);
+						this.isStreaming = false;
+						this.setSendButtonEnabled(true);
+						this.showStopButton(false);
+						this.currentAbortController = null;
+					});
 				}
 			};
 

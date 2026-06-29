@@ -230,6 +230,30 @@ export class LLMService {
 		return parts.join('\n');
 	}
 
+	private extractUploadedFileUrl(payload: unknown): string | null {
+		if (!payload || typeof payload !== 'object') {
+			return null;
+		}
+
+		const record = payload as Record<string, unknown>;
+		if (typeof record.url === 'string' && record.url.length > 0) {
+			return record.url;
+		}
+
+		if (typeof record.file_url === 'string' && record.file_url.length > 0) {
+			return record.file_url;
+		}
+
+		if (record.file && typeof record.file === 'object') {
+			const fileRecord = record.file as Record<string, unknown>;
+			if (typeof fileRecord.url === 'string' && fileRecord.url.length > 0) {
+				return fileRecord.url;
+			}
+		}
+
+		return null;
+	}
+
 	async sendMessage(message: string, conversationHistory: ChatMessage[] = []): Promise<string> {
 		try {
 			const messages: ChatMessage[] = [];
@@ -388,11 +412,10 @@ export class LLMService {
 							continue;
 						}
 
-						const body = await resp.json();
-						if (body && typeof body === 'object') {
-							if ((body as any).url) return (body as any).url;
-							if ((body as any).file && (body as any).file.url) return (body as any).file.url;
-							if ((body as any).id && (body as any).file_url) return (body as any).file_url || (body as any).url || null;
+						const body: unknown = await resp.json();
+						const uploadedUrl = this.extractUploadedFileUrl(body);
+						if (uploadedUrl) {
+							return uploadedUrl;
 						}
 					} catch (fetchErr) {
 						LoggingUtility.warn('Multipart upload via fetch failed, will try JSON fallback:', fetchErr);
@@ -414,12 +437,10 @@ export class LLMService {
 					continue;
 				}
 
-				const body = response.json;
-				// Common shapes: { url: 'https://...' } or { id: 'abc', url: '...' } or { file: { url: ... } }
-				if (body && typeof body === 'object') {
-					if ((body as any).url) return (body as any).url;
-					if ((body as any).id && (body as any).file_url) return (body as any).file_url || (body as any).url || null;
-					if ((body as any).file && (body as any).file.url) return (body as any).file.url;
+				const body: unknown = response.json;
+				const uploadedUrl = this.extractUploadedFileUrl(body);
+				if (uploadedUrl) {
+					return uploadedUrl;
 				}
 			} catch (err) {
 				LoggingUtility.warn('Image upload attempt failed for endpoint:', endpoint, err);
@@ -491,9 +512,9 @@ export class LLMService {
 				throw new Error(`API request failed: ${response.status} - ${errorText}`);
 			}
 
-			const responseData = response.json;
+			const responseData: unknown = response.json;
 			LoggingUtility.log('Response data:', responseData);
-			return responseData;
+			return responseData as ChatResponse;
 		} catch (error) {
 			LoggingUtility.error('Fetch error details:', error);
 			throw new Error(getLLMErrorMessage(error, this.config.apiEndpoint));

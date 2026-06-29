@@ -1,7 +1,7 @@
 import { App, MarkdownView, Menu, Modal, Notice, TAbstractFile, TFile, TFolder } from 'obsidian';
 import type LocalLLMPlugin from '../main';
 import type { AIConnectionConfig } from '../main';
-import { createLLMService } from './LLMService';
+import { createLLMService, type LLMService } from './LLMService';
 import { LoggingUtility } from '../utils/LoggingUtility';
 
 type AutoTagSource = 'context-menu' | 'command';
@@ -496,14 +496,14 @@ export class AutoTagService {
 			return undefined;
 		}
 
-		const connections = this.plugin.settings.multiAIConnections || [];
+		const connections = (this.plugin.settings.multiAIConnections || []) as AIConnectionConfig[];
 		return connections.find((connection) => connection.id === selectedId && !connection.isSleeping);
 	}
 
-	private buildAutoTagLLMService() {
+	private buildAutoTagLLMService(): LLMService {
 		const connection = this.getAutoTagConnectionConfig();
 		if (!connection) {
-			return this.plugin.llmService;
+			return this.plugin.llmService as LLMService;
 		}
 
 		return createLLMService({

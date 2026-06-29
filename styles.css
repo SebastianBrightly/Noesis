@@ -105,9 +105,9 @@
 	color: var(--text-on-accent);
 }
 
-.local-llm-message-user .local-llm-message-content {
-	user-select: text !important;
-	-webkit-user-select: text !important;
+.local-llm-message.local-llm-message-user .local-llm-message-content {
+	user-select: text;
+	-webkit-user-select: text;
 	cursor: text;
 }
 
@@ -550,10 +550,10 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 	cursor: not-allowed;
 }
 
-.local-llm-stop-button {
+.local-llm-input-container .local-llm-stop-button {
 	padding: 8px 16px;
-	background-color: #dc3545 !important;
-	color: white !important;
+	background-color: #dc3545;
+	color: white;
 	border: none;
 	border-radius: 6px;
 	cursor: pointer;
@@ -564,8 +564,8 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 	transition: background-color 0.2s ease;
 }
 
-.local-llm-stop-button:hover:not(:disabled) {
-	background-color: #c82333 !important;
+.local-llm-input-container .local-llm-stop-button:hover:not(:disabled) {
+	background-color: #c82333;
 }
 
 .local-llm-stop-button:disabled {
@@ -962,11 +962,11 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 	background-color: var(--background-secondary);
 }
 
-.local-llm-copy-button.copied {
-	background-color: transparent !important;
+.local-llm-message .local-llm-copy-button.copied {
+	background-color: transparent;
 	/* Let pseudo handle background */
 	color: var(--text-on-accent);
-	opacity: 1 !important;
+	opacity: 1;
 	position: absolute;
 	/* Already absolute but reinforcing for pseudo */
 	z-index: 10;
@@ -1285,12 +1285,12 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* Add classes for dynamic styles */
-.local-llm-search-indicator-hidden {
-	display: none !important;
+.local-llm-search-indicator.local-llm-search-indicator-hidden {
+	display: none;
 }
 
-.local-llm-search-indicator-visible {
-	display: block !important;
+.local-llm-search-indicator.local-llm-search-indicator-visible {
+	display: block;
 }
 
 .local-llm-context-menu {
@@ -1298,20 +1298,20 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 	z-index: 1000;
 }
 
-.local-llm-stop-button-visible {
-	display: block !important;
+.local-llm-stop-button.local-llm-stop-button-visible {
+	display: block;
 }
 
-.local-llm-stop-button-hidden {
-	display: none !important;
+.local-llm-stop-button.local-llm-stop-button-hidden {
+	display: none;
 }
 
-.local-llm-send-button-visible {
-	display: block !important;
+.local-llm-send-button.local-llm-send-button-visible {
+	display: block;
 }
 
-.local-llm-send-button-hidden {
-	display: none !important;
+.local-llm-send-button.local-llm-send-button-hidden {
+	display: none;
 }
 
 .local-llm-note-clickable {
@@ -1327,8 +1327,8 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* RAG Progress Floating Dialog Styles */
-.rag-progress-floating-dialog {
-	position: fixed !important;
+body > .rag-progress-floating-dialog {
+	position: fixed;
 	top: 20px;
 	right: 20px;
 	width: 350px;
@@ -1447,8 +1447,8 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 	background: var(--interactive-accent-hover);
 }
 
-.rag-progress-button-hidden {
-	display: none !important;
+.rag-progress-buttons .rag-progress-button-hidden {
+	display: none;
 }
 
 .rag-progress-button-inline {
@@ -1516,8 +1516,8 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* Minimized state */
-.rag-progress-floating-dialog.minimized {
-	width: 200px !important;
+body > .rag-progress-floating-dialog.minimized {
+	width: 200px;
 }
 
 .rag-progress-floating-dialog.minimized .rag-progress-content {
@@ -1525,8 +1525,8 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* Error state */
-.rag-progress-message.error {
-	color: var(--text-error) !important;
+.rag-progress-floating-dialog .rag-progress-message.error {
+	color: var(--text-error);
 }
 
 /* RAG Status Area */

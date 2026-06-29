@@ -784,13 +784,16 @@ export class SearchService {
 	 */
 	private getFileTitle(file: TFile, metadata: CachedMetadata | null): string {
 		// Try to get title from frontmatter
-		if (metadata?.frontmatter?.title) {
+		if (typeof metadata?.frontmatter?.title === 'string' && metadata.frontmatter.title.length > 0) {
 			return metadata.frontmatter.title;
 		}
 		
 		// Try to get title from first heading
 		if (metadata?.headings && metadata.headings.length > 0) {
-			return metadata.headings[0].heading;
+			const heading = metadata.headings[0]?.heading;
+			if (typeof heading === 'string' && heading.length > 0) {
+				return heading;
+			}
 		}
 		
 		// Fall back to filename
