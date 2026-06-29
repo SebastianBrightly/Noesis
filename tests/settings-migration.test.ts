@@ -7,10 +7,14 @@ vi.mock('../src/main', () => ({
     SEARCH: 'search',
     NONE: 'none'
   },
+  DEFAULT_SETTINGS: {
+    enableShortResponses: false,
+    preferredTone: ''
+  },
   default: class {}
 }));
 
-import { SettingsManager, DEFAULT_SETTINGS } from '../src/services/SettingsManager';
+import { SettingsManager, SM_DEFAULT_SETTINGS } from '../src/services/SettingsManager';
 
 describe('SettingsManager migration', () => {
   it('applies defaults for new scaffold settings when absent in stored data', async () => {
@@ -27,7 +31,7 @@ describe('SettingsManager migration', () => {
     await manager.loadSettings();
     const settings = manager.getSettings();
 
-    expect(settings.enableShortResponses).toBe(DEFAULT_SETTINGS.enableShortResponses);
-    expect(settings.preferredTone).toBe(DEFAULT_SETTINGS.preferredTone);
+    expect(settings.enableShortResponses).toBe(SM_DEFAULT_SETTINGS.enableShortResponses);
+    expect(settings.preferredTone).toBe(SM_DEFAULT_SETTINGS.preferredTone);
   });
 });

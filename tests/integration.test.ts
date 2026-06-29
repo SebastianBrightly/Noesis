@@ -11,6 +11,17 @@ vi.mock('../src/main', () => ({
     SEARCH: 'search',
     NONE: 'none'
   },
+  PersonalityMode: {
+    DEFAULT: 'Default'
+  },
+  PersonalityTrait: {
+    DEFAULT: 'Aim to provide unambiguous and epigrammatic responses'
+  },
+  CHAT_VIEW_TYPE: 'local-llm-chat-view',
+  DEFAULT_SETTINGS: {
+    enableShortResponses: false,
+    preferredTone: ''
+  },
   default: class {}
 }));
 
@@ -123,6 +134,7 @@ function createAppStubForOpenNotes() {
 
   return {
     workspace: {
+      on: vi.fn(() => ({})),
       openLinkText: vi.fn(),
       getLeavesOfType: vi.fn((type: string) => {
         if (type === 'markdown') return [quantumLeaf, recipeLeaf];
@@ -164,6 +176,7 @@ function createAppStubForSearch() {
 
   return {
     workspace: {
+      on: vi.fn(() => ({})),
       openLinkText: vi.fn(),
       getLeavesOfType: vi.fn(() => []),
       getActiveViewOfType: vi.fn(() => null),

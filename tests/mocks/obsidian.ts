@@ -79,6 +79,7 @@ export class ItemView {
   app: any;
   leaf: any;
   containerEl: HTMLElement;
+  private registeredEvents: any[] = [];
 
   constructor(leaf: any) {
     this.leaf = leaf;
@@ -86,6 +87,11 @@ export class ItemView {
     this.containerEl = document.createElement('div');
     this.containerEl.appendChild(document.createElement('div'));
     this.containerEl.appendChild(document.createElement('div'));
+  }
+
+  registerEvent(eventRef: any) {
+    this.registeredEvents.push(eventRef);
+    return eventRef;
   }
 }
 
