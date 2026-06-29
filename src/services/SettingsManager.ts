@@ -8,7 +8,7 @@ export const SM_DEFAULT_SETTINGS = { ...DEFAULT_SETTINGS };
 
 
 export class SettingsManager {
-	private static instance: SettingsManager;
+	private static instance?: SettingsManager;
 	private plugin: Plugin;
 	private settings: LocalLLMSettings;
 	private settingsChangeCallbacks: (() => void)[] = [];
@@ -34,8 +34,9 @@ export class SettingsManager {
 
 	public async loadSettings(): Promise<void> {
 		try {
-			const loadedData = await this.plugin.loadData();
-			this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+			const loadedData: unknown = await this.plugin.loadData();
+			const normalizedLoadedData = (loadedData && typeof loadedData === 'object') ? loadedData : {};
+			this.settings = Object.assign({}, DEFAULT_SETTINGS, normalizedLoadedData);
 			const validContextModes: ContextMode[] = [
 				ContextMode.CURRENT_NOTE,
 				ContextMode.LINKED_NOTES,
@@ -215,7 +216,7 @@ export class SettingsManager {
 	public static async cleanup(): Promise<void> {
 		if (SettingsManager.instance) {
 			SettingsManager.instance.settingsChangeCallbacks = [];
-			SettingsManager.instance = undefined as any;
+			SettingsManager.instance = undefined;
 		}
 	}
 } 

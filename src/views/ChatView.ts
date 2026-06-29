@@ -44,6 +44,7 @@ interface LLMConfig {
 	model?: string;
 	apiKey?: string;
 	contextMode?: ContextMode;
+	enableShortResponses?: boolean;
 }
 
 interface ObsidianApp {
@@ -622,7 +623,7 @@ export class ChatView extends ItemView {
 			systemPrompt: config.systemPrompt,
 			model: config.model,
 			apiKey: config.apiKey,
-			enableShortResponses: (config as any).enableShortResponses,
+			enableShortResponses: config.enableShortResponses,
 			storedPersonalitySystemPrompt: this.plugin.settings.storedPersonalitySystemPrompt,
 			personalityName: this.plugin.settings.personalityName
 		});

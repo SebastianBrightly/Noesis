@@ -21,6 +21,28 @@ interface EmbeddingResponse {
 	};
 }
 
+function isEmbeddingResponse(value: unknown): value is EmbeddingResponse {
+	if (!value || typeof value !== 'object') {
+		return false;
+	}
+
+	const candidate = value as { data?: unknown };
+	if (!Array.isArray(candidate.data)) {
+		return false;
+	}
+
+	return candidate.data.every((entry) => {
+		if (!entry || typeof entry !== 'object') {
+			return false;
+		}
+
+		const item = entry as { embedding?: unknown; index?: unknown };
+		return Array.isArray(item.embedding)
+			&& item.embedding.every((n) => typeof n === 'number')
+			&& typeof item.index === 'number';
+	});
+}
+
 export interface EmbeddingConfig {
 	endpoint: string;
 	model: string;
@@ -394,7 +416,11 @@ export class EmbeddingService {
 				throw new Error(`Embedding API request failed: ${response.status} - ${errorText}`);
 			}
 
-			const responseData = response.json as EmbeddingResponse;
+			const rawResponseData: unknown = response.json;
+			if (!isEmbeddingResponse(rawResponseData)) {
+				throw new Error('Unexpected embedding response format');
+			}
+			const responseData = rawResponseData;
 			if (!responseData.data || responseData.data.length === 0) {
 				throw new Error('No embedding data returned from API');
 			}

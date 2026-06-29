@@ -30,7 +30,7 @@ export interface VectorDocument {
 }
 
 export interface VectorSearchResult {
-	document: VectorDocument;
+	activeDocument: VectorDocument;
 	similarity: number;
 }
 
@@ -79,7 +79,7 @@ export class UnifiedVectorDatabase {
 		}
 
 		try {
-			const parsed = JSON.parse(vectorJson);
+			const parsed: unknown = JSON.parse(vectorJson);
 			if (!Array.isArray(parsed)) {
 				return [];
 			}
@@ -508,17 +508,17 @@ export class UnifiedVectorDatabase {
 		const similarities: VectorSearchResult[] = [];
 		for (const row of rows) {
 			const docVector = this.parseVector(row.vector_json);
-			const document = this.mapRowToDocument(row);
-			if (!document) {
+			const activeDocument = this.mapRowToDocument(row);
+			if (!activeDocument) {
 				continue;
 			}
 
-			document.vector = docVector;
+			activeDocument.vector = docVector;
 			const similarity = this.cosineSimilarity(queryVector, docVector);
 
 			if (similarity >= threshold) {
 				similarities.push({
-					document,
+					activeDocument,
 					similarity
 				});
 			}
@@ -543,7 +543,7 @@ export class UnifiedVectorDatabase {
 		const resultsByFile = new Map<string, VectorSearchResult[]>();
 
 		for (const result of allResults) {
-			const filePath = result.document.metadata.filePath;
+			const filePath = result.activeDocument.metadata.filePath;
 
 			if (!resultsByFile.has(filePath)) {
 				resultsByFile.set(filePath, []);
@@ -689,9 +689,9 @@ export class UnifiedVectorDatabase {
 
 		const documents: VectorDocument[] = [];
 		for (const row of rows) {
-			const document = this.mapRowToDocument(row);
-			if (document) {
-				documents.push(document);
+			const mappedDocument = this.mapRowToDocument(row);
+			if (mappedDocument) {
+				documents.push(mappedDocument);
 			}
 		}
 
@@ -715,9 +715,9 @@ export class UnifiedVectorDatabase {
 
 		const documents: VectorDocument[] = [];
 		for (const row of rows) {
-			const document = this.mapRowToDocument(row);
-			if (document) {
-				documents.push(document);
+			const mappedDocument = this.mapRowToDocument(row);
+			if (mappedDocument) {
+				documents.push(mappedDocument);
 			}
 		}
 

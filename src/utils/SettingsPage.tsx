@@ -1,5 +1,5 @@
 import LocalLLMPlugin from "@/main";
-import  { ContextMode, PersonalityMode,PersonalityTrait, CHAT_VIEW_TYPE, AIConnectionConfig } from "@/main";
+import  { ContextMode, PersonalityMode,PersonalityTrait, CHAT_VIEW_TYPE, AIConnectionConfig, LocalLLMSettings } from "@/main";
 import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Notice, DropdownComponent  } from "obsidian";
 import React from "react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
@@ -34,7 +34,9 @@ export class SettingsPage extends PluginSettingTab
 	private _updatingPersonality: boolean = false;
 	// UI references to keep panels in sync
 	private personalityPreviewTextArea?: HTMLTextAreaElement;
-	private personalityDropdown?: any;
+	private personalityDropdown?: DropdownComponent;
+	private modelDropdown?: DropdownComponent;
+	private embeddingModelDropdown?: DropdownComponent;
 	private contextModeDropdown?: DropdownComponent;
 	private contextModeSyncIntervalId?: number;
 
@@ -55,7 +57,7 @@ export class SettingsPage extends PluginSettingTab
 		const tabList = tabs.createEl('div', { cls: 'local-llm-tablist' });
 		const panels = tabs.createEl('div', { cls: 'local-llm-panels' });
 
-		const makeTab = (label: string, renderFn: (el: HTMLElement, s: any) => void) => {
+		const makeTab = (label: string, renderFn: (el: HTMLElement, s: LocalLLMSettings) => void) => {
 
 		const btn = tabList.createEl('button', { cls: 'local-llm-tab', text: label });
 		const panel = panels.createEl('div', { cls: 'local-llm-panel' });
@@ -90,7 +92,7 @@ export class SettingsPage extends PluginSettingTab
 
 	}
 
-	private visualizeSettings_AutoTag(containerEl: HTMLElement, LocalLLMSettings: any): void {
+	private visualizeSettings_AutoTag(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void {
 		new Setting(containerEl).setName('Auto Tag').setHeading();
 
 		new Setting(containerEl)
@@ -153,7 +155,7 @@ export class SettingsPage extends PluginSettingTab
 		}
 	}
 
-	private visualizeSettings_Templates(containerEl: HTMLElement, LocalLLMSettings: any): void {
+	private visualizeSettings_Templates(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void {
 		new Setting(containerEl).setName('Response Templates').setHeading();
 		let templateTextAreaEl: HTMLTextAreaElement | null = null;
 
@@ -282,7 +284,7 @@ export class SettingsPage extends PluginSettingTab
 
 	private async loadAvailableModels(): Promise<void> 
 	{
-		const dropdown = (this as any).modelDropdown;
+		const dropdown = this.modelDropdown;
 		if (!dropdown) return;
 		await this.loadAvailableModelsForConfig(dropdown, {
 			apiEndpoint: this.plugin.settings.apiEndpoint,
@@ -370,7 +372,7 @@ export class SettingsPage extends PluginSettingTab
 	 * Falls back to the current default embedding model when no embedding models are returned.
 	 */
 	private async loadAvailableEmbeddingModels(): Promise<void> {
-		const dropdown = (this as any).embeddingModelDropdown;
+		const dropdown = this.embeddingModelDropdown;
 		if (!dropdown) return;
 
 		const currentOrDefaultModel = this.plugin.settings.embeddingModel || this.plugin.settings.embeddingModel;
@@ -448,7 +450,11 @@ export class SettingsPage extends PluginSettingTab
 			.filter(line => line.length > 0);
 	}
 
-	private setpersonalityPreview(containerEl: HTMLElement,LocalLLMSettings: any ): void {
+	private getErrorMessage(error: unknown): string {
+		return error instanceof Error ? error.message : String(error);
+	}
+
+	private setpersonalityPreview(containerEl: HTMLElement,LocalLLMSettings: LocalLLMSettings ): void {
 		const name = this.plugin.settings.personalityName || [];
 		const trait = this.plugin.settings.personalityPrompt || [];
 
@@ -466,8 +472,12 @@ export class SettingsPage extends PluginSettingTab
 
 		const previewBox = containerEl.querySelector('.local-llm-personality-preview') as HTMLElement;
 		if (previewBox) {
-			const selectedPersonality = LocalLLMSettings.personalityName;
-			const selectedPersonalityPrompt = LocalLLMSettings.personalityPrompt;
+			const selectedPersonality = Array.isArray(LocalLLMSettings.personalityName)
+				? (LocalLLMSettings.personalityName[0] || '')
+				: (LocalLLMSettings.personalityName || '');
+			const selectedPersonalityPrompt = Array.isArray(LocalLLMSettings.personalityPrompt)
+				? (LocalLLMSettings.personalityPrompt[0] || '')
+				: (LocalLLMSettings.personalityPrompt || '');
 			previewBox.textContent = personalityMap[selectedPersonality.toUpperCase()] || selectedPersonalityPrompt || 'No traits found for this personality. Please check your settings.';
 		}
 	}
@@ -513,11 +523,11 @@ export class SettingsPage extends PluginSettingTab
 			} else {
 				const leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE);
 				leaves.forEach(leaf => {
-					const view = leaf.view as any;
-					if (view && typeof view.updateLLMServiceFromSettings === 'function') {
+					const view = leaf.view as Partial<Pick<ChatView, 'updateLLMServiceFromSettings' | 'updatePersonalityDropdownFromSettings'>>;
+					if (typeof view.updateLLMServiceFromSettings === 'function') {
 						view.updateLLMServiceFromSettings();
 					}
-					if (view && typeof view.updatePersonalityDropdownFromSettings === 'function') {
+					if (typeof view.updatePersonalityDropdownFromSettings === 'function') {
 						view.updatePersonalityDropdownFromSettings();
 					}
 				});
@@ -547,14 +557,15 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				valueLabel = document.createElement('span');
-				valueLabel.className = 'local-llm-slider-value';
-				valueLabel.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
-				slider.sliderEl.parentElement?.appendChild(valueLabel);
+				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				labelEl.className = 'local-llm-slider-value';
+				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
+				slider.sliderEl.parentElement?.appendChild(labelEl);
+				valueLabel = labelEl;
 			});
 		};
 
-	private visualizeSettings_LLMConfig(containerEl: HTMLElement, LocalLLMSettings: any): void 
+	private visualizeSettings_LLMConfig(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void
 	{
 	
 		const config = LocalLLMSettings;
@@ -580,10 +591,11 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				valueLabel = document.createElement('span');
-				valueLabel.className = 'local-llm-slider-value';
-				valueLabel.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
-				slider.sliderEl.parentElement?.appendChild(valueLabel);
+				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				labelEl.className = 'local-llm-slider-value';
+				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
+				slider.sliderEl.parentElement?.appendChild(labelEl);
+				valueLabel = labelEl;
 			});
 		};
 
@@ -652,7 +664,7 @@ export class SettingsPage extends PluginSettingTab
 				});
 
 				// Store reference to dropdown for dynamic updates
-				(this as any).modelDropdown = dropdown;
+				this.modelDropdown = dropdown;
 			});
 
 		// Add refresh models button
@@ -939,7 +951,7 @@ export class SettingsPage extends PluginSettingTab
 		renderConnections();
 	}
 
-	private visualizeSettings_SystemPrompt(containerEl: HTMLElement, LocalLLMSettings: any): void
+	private visualizeSettings_SystemPrompt(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void
 	{
 		//**************************** */
 		const names = Object.keys(PersonalityMode) || [];
@@ -992,7 +1004,7 @@ export class SettingsPage extends PluginSettingTab
 
 	
 				// keep a reference for programmatic updates
-				(this as any).personalityDropdown = dropdown;
+				this.personalityDropdown = dropdown;
 				dropdown.setValue(current);
 				dropdown.onChange(async (value) => {
 					await this.handlePersonalityChange(value, containerEl);
@@ -1014,7 +1026,7 @@ export class SettingsPage extends PluginSettingTab
 
 	}
 
-	private visualizeSettings_Search(containerEl: HTMLElement, LocalLLMSettings: any): void
+	private visualizeSettings_Search(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void
 	{
 
 			const addStyledSlider = (setting: Setting, opts: {
@@ -1036,10 +1048,11 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				valueLabel = document.createElement('span');
-				valueLabel.className = 'local-llm-slider-value';
-				valueLabel.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
-				slider.sliderEl.parentElement?.appendChild(valueLabel);
+				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				labelEl.className = 'local-llm-slider-value';
+				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
+				slider.sliderEl.parentElement?.appendChild(labelEl);
+				valueLabel = labelEl;
 			});
 		};
 		//**************************** */
@@ -1088,7 +1101,7 @@ export class SettingsPage extends PluginSettingTab
 		);
 	}
 
-	private visualizeSettings_RAG(containerEl: HTMLElement, LocalLLMSettings: any): void
+	private visualizeSettings_RAG(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void
 	{
 		const addStyledSlider = (setting: Setting, opts: {
 			min: number, max: number, step: number, value: number, onChange: (value: number) => Promise<void>,
@@ -1109,10 +1122,11 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				valueLabel = document.createElement('span');
-				valueLabel.className = 'local-llm-slider-value';
-				valueLabel.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
-				slider.sliderEl.parentElement?.appendChild(valueLabel);
+				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				labelEl.className = 'local-llm-slider-value';
+				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
+				slider.sliderEl.parentElement?.appendChild(labelEl);
+				valueLabel = labelEl;
 			});
 		};
 		//**************************** */
@@ -1184,7 +1198,7 @@ export class SettingsPage extends PluginSettingTab
 						this.plugin.notifyChatViewsOfRAGComplete();
 					} catch (error) {
 						LoggingUtility.error('RAG update failed:', error);
-						new Notice(`RAG database update failed: ${error.message}`);
+						new Notice(`RAG database update failed: ${this.getErrorMessage(error)}`);
 					} finally {
 						button.setButtonText('Smart Update');
 						button.setDisabled(false);
@@ -1217,7 +1231,7 @@ export class SettingsPage extends PluginSettingTab
 						new Notice('RAG database completely rebuilt!');
 					} catch (error) {
 						LoggingUtility.error('RAG rebuild failed:', error);
-						new Notice(`RAG database rebuild failed: ${error.message}`);
+						new Notice(`RAG database rebuild failed: ${this.getErrorMessage(error)}`);
 					} finally {
 						button.setButtonText('Force Rebuild');
 						button.setDisabled(false);
@@ -1400,7 +1414,7 @@ export class SettingsPage extends PluginSettingTab
 					await this.plugin.saveSettings();
 				});
 
-				(this as any).embeddingModelDropdown = dropdown;
+				this.embeddingModelDropdown = dropdown;
 			});
 
 		embeddingModelSetting.addButton(button => button
@@ -1448,7 +1462,9 @@ export class SettingsPage extends PluginSettingTab
 				dropdown.addOption('first', 'Use first chunk embedding');
 				dropdown.setValue(this.plugin.settings.embeddingChunkCombineStrategy || 'storeChunks');
 				dropdown.onChange(async (value) => {
-					this.plugin.settings.embeddingChunkCombineStrategy = value as any;
+					if (value === 'storeChunks' || value === 'average' || value === 'first') {
+						this.plugin.settings.embeddingChunkCombineStrategy = value;
+					}
 					await this.plugin.saveSettings();
 				});
 			});
@@ -1487,7 +1503,7 @@ export class SettingsPage extends PluginSettingTab
 						}
 					} catch (error) {
 						LoggingUtility.error('Embedding test failed:', error);
-						new Notice(`Embedding test failed: ${error.message}`);
+						new Notice(`Embedding test failed: ${this.getErrorMessage(error)}`);
 					} finally {
 						button.setButtonText('Test Embedding');
 						button.setDisabled(false);
@@ -1495,7 +1511,7 @@ export class SettingsPage extends PluginSettingTab
 				}));
 	}
 
-	private visualizeSettings_ImageProcessing(containerEl: HTMLElement, LocalLLMSettings: any): void
+	private visualizeSettings_ImageProcessing(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void
 	{
 		//**************************** */
 		new Setting(containerEl).setName('Image Processing').setHeading();
@@ -1552,10 +1568,11 @@ export class SettingsPage extends PluginSettingTab
 					} catch (error) {
 						LoggingUtility.error('Image processing failed:', error);
 						// Show user-friendly error message for vision model issues
-						if (error.message.includes('vision capabilities')) {
+						const errorMessage = this.getErrorMessage(error);
+						if (errorMessage.includes('vision capabilities')) {
 							new Notice('Vision model required: your current LLM model does not support image processing. Please switch to a vision model like Gemma 4 in LM Studio and try again.', 8000);
 						} else {
-							new Notice(`Image processing failed: ${error.message}`);
+							new Notice(`Image processing failed: ${errorMessage}`);
 						}
 					} finally {
 						button.setButtonText('Process Images');
@@ -1565,7 +1582,7 @@ export class SettingsPage extends PluginSettingTab
 
 	}
 
-	private visualizeSettings_Debug(containerEl: HTMLElement, LocalLLMSettings: any): void
+	private visualizeSettings_Debug(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void
 	{
 		new Setting(containerEl).setName('Support').setHeading();
 		new Setting(containerEl)
@@ -1641,7 +1658,7 @@ export class SettingsPage extends PluginSettingTab
 				}
 			} catch (error) {
 				LoggingUtility.error('Connection test failed:', error);
-				new Notice(`Connection failed: ${error.message}`);
+				new Notice(`Connection failed: ${this.getErrorMessage(error)}`);
 				testButton.setText('Test connection');
 				testButton.disabled = false;
 			}

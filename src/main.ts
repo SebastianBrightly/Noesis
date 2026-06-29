@@ -444,7 +444,9 @@ export default class LocalLLMPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const loadedData: unknown = await this.loadData();
+		const normalizedLoadedData = (loadedData && typeof loadedData === 'object') ? loadedData : {};
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, normalizedLoadedData);
 		let needsMigrationSave = false;
 
 		const normalizeConnectionConfig = (raw: unknown): AIConnectionConfig | null => {

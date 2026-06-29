@@ -639,7 +639,7 @@ export class AutoTagService {
 					await new Promise((resolve) => setTimeout(resolve, workloadProfile.delayMs));
 				}
 			}
-		} catch (error) {
+		} catch (error: unknown) {
 			failed += Math.max(1, files.length - processed - skipped - failed);
 			LoggingUtility.error('Folder auto-tagging failed', {
 				folder: folderKey,
@@ -772,7 +772,7 @@ export class AutoTagService {
 				message: 'metadata updated',
 				result: applied
 			};
-		} catch (error) {
+		} catch (error: unknown) {
 			workingNotice?.hide();
 			LoggingUtility.error('Auto-tagging failed', {
 				filePath: file.path,

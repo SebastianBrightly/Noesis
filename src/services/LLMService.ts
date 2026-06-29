@@ -148,6 +148,35 @@ export interface StreamChunk {
 	}>;
 }
 
+function isStreamChunk(value: unknown): value is StreamChunk {
+	if (!value || typeof value !== 'object') {
+		return false;
+	}
+
+	const candidate = value as { choices?: unknown };
+	if (!Array.isArray(candidate.choices)) {
+		return false;
+	}
+
+	return candidate.choices.every((choice) => {
+		if (!choice || typeof choice !== 'object') {
+			return false;
+		}
+
+		const entry = choice as { delta?: unknown; finish_reason?: unknown };
+		if (!entry.delta || typeof entry.delta !== 'object') {
+			return false;
+		}
+
+		const delta = entry.delta as { content?: unknown; role?: unknown };
+		const validContent = typeof delta.content === 'undefined' || typeof delta.content === 'string';
+		const validRole = typeof delta.role === 'undefined' || typeof delta.role === 'string';
+		const validFinishReason = typeof entry.finish_reason === 'undefined' || typeof entry.finish_reason === 'string' || entry.finish_reason === null;
+
+		return validContent && validRole && validFinishReason;
+	});
+}
+
 // Model listing shapes used when discovering available models from
 // various server endpoints (OpenAI-like `data` arrays or LM Studio's
 // `models` listing). The parsing code tolerates both formats below.
@@ -594,7 +623,12 @@ export class LLMService {
 							}
 
 							try {
-								const chunk: StreamChunk = JSON.parse(data);
+								const parsedChunk: unknown = JSON.parse(data);
+								if (!isStreamChunk(parsedChunk)) {
+									throw new Error('Invalid stream chunk payload');
+								}
+
+								const chunk = parsedChunk;
 								this.processStreamChunk(chunk, callback, isCompleted);
 								// Check if completion was signaled by processStreamChunk
 								if (chunk.choices?.some(choice => choice.finish_reason)) {
@@ -609,16 +643,16 @@ export class LLMService {
 			} finally {
 				reader.releaseLock();
 			}
-		} catch (error) {
+		} catch (error: unknown) {
 			LoggingUtility.error('Streaming fetch error details:', error);
 
 			// Handle specific error types
-			if (error.name === 'AbortError') {
+			if (error instanceof Error && error.name === 'AbortError') {
 				// Re-throw as AbortError so the caller can detect user cancellation
 				throw error;
 			}
 
-			throw new Error(getLLMErrorMessage(error, this.config.apiEndpoint));
+			throw new Error(getLLMErrorMessage(error instanceof Error ? error : new Error(String(error)), this.config.apiEndpoint));
 		}
 	}
 

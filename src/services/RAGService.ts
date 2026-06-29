@@ -1280,8 +1280,8 @@ export class RAGService {
 		try {
 			const activeLeaf = this.app.workspace.activeLeaf;
 			if (activeLeaf && activeLeaf.view && activeLeaf.view.getViewType() === 'markdown') {
-				const activeFile = (activeLeaf.view as any).file;
-				this.lastActiveFilePath = activeFile ? activeFile.path : null;
+				const activeFile = (activeLeaf.view as { file?: { path?: string } }).file;
+				this.lastActiveFilePath = activeFile?.path ?? null;
 			} else {
 				this.lastActiveFilePath = null;
 			}
@@ -2674,22 +2674,22 @@ export class RAGService {
 		const ragResults: RAGSearchResult[] = [];
 
 		for (const result of allResults) {
-			const file = this.app.vault.getAbstractFileByPath(result.document.metadata.filePath);
+			const file = this.app.vault.getAbstractFileByPath(result.activeDocument.metadata.filePath);
 			if (file instanceof TFile) {
 				ragResults.push({
 					file: file,
-					content: result.document.metadata.paragraphText,
+					content: result.activeDocument.metadata.paragraphText,
 					similarity: result.similarity,
-					title: result.document.metadata.title,
-					path: result.document.metadata.filePath,
-					paragraphIndex: result.document.metadata.paragraphIndex,
-					sectionIndex: result.document.metadata.sectionIndex,
-					anchorType: result.document.metadata.anchorType,
-					anchorValue: result.document.metadata.anchorValue,
-					anchorTarget: result.document.metadata.anchorTarget,
-					headingPath: result.document.metadata.headingPath,
-					headingSlug: result.document.metadata.headingSlug,
-					matchedParagraph: result.document.metadata.paragraphText
+					title: result.activeDocument.metadata.title,
+					path: result.activeDocument.metadata.filePath,
+					paragraphIndex: result.activeDocument.metadata.paragraphIndex,
+					sectionIndex: result.activeDocument.metadata.sectionIndex,
+					anchorType: result.activeDocument.metadata.anchorType,
+					anchorValue: result.activeDocument.metadata.anchorValue,
+					anchorTarget: result.activeDocument.metadata.anchorTarget,
+					headingPath: result.activeDocument.metadata.headingPath,
+					headingSlug: result.activeDocument.metadata.headingSlug,
+					matchedParagraph: result.activeDocument.metadata.paragraphText
 				});
 			}
 		}
@@ -2715,18 +2715,18 @@ export class RAGService {
 			if (file instanceof TFile) {
 				const ragResults = paragraphResults.map(result => ({
 					file: file,
-					content: result.document.metadata.paragraphText,
+					content: result.activeDocument.metadata.paragraphText,
 					similarity: result.similarity,
-					title: result.document.metadata.title,
-					path: result.document.metadata.filePath,
-					paragraphIndex: result.document.metadata.paragraphIndex,
-					sectionIndex: result.document.metadata.sectionIndex,
-					anchorType: result.document.metadata.anchorType,
-					anchorValue: result.document.metadata.anchorValue,
-					anchorTarget: result.document.metadata.anchorTarget,
-					headingPath: result.document.metadata.headingPath,
-					headingSlug: result.document.metadata.headingSlug,
-					matchedParagraph: result.document.metadata.paragraphText
+					title: result.activeDocument.metadata.title,
+					path: result.activeDocument.metadata.filePath,
+					paragraphIndex: result.activeDocument.metadata.paragraphIndex,
+					sectionIndex: result.activeDocument.metadata.sectionIndex,
+					anchorType: result.activeDocument.metadata.anchorType,
+					anchorValue: result.activeDocument.metadata.anchorValue,
+					anchorTarget: result.activeDocument.metadata.anchorTarget,
+					headingPath: result.activeDocument.metadata.headingPath,
+					headingSlug: result.activeDocument.metadata.headingSlug,
+					matchedParagraph: result.activeDocument.metadata.paragraphText
 				}));
 
 				ragResultsMap.set(filePath, ragResults);

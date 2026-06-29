@@ -32,8 +32,10 @@ export class RAGProgressDialog {
 	 * Create the floating dialog element
 	 */
 	private createFloatingDialog() {
+		const activeDocument = this.getActiveDocument();
+
 		// Create main container
-		this.containerEl = document.body.createEl('div', {
+		this.containerEl = activeDocument.body.createEl('div', {
 			cls: 'rag-progress-floating-dialog'
 		});
 
@@ -121,6 +123,8 @@ export class RAGProgressDialog {
 	 * Make the dialog draggable
 	 */
 	private makeDraggable(titleEl: HTMLElement) {
+		const activeDocument = this.getActiveDocument();
+		const activeWindow = activeDocument.defaultView ?? window;
 		let isDragging = false;
 		let startX = 0;
 		let startY = 0;
@@ -155,8 +159,8 @@ export class RAGProgressDialog {
 			
 			// Keep within viewport bounds
 			const rect = this.containerEl.getBoundingClientRect();
-			newX = Math.max(0, Math.min(newX, window.innerWidth - rect.width));
-			newY = Math.max(0, Math.min(newY, window.innerHeight - rect.height));
+			newX = Math.max(0, Math.min(newX, activeWindow.innerWidth - rect.width));
+			newY = Math.max(0, Math.min(newY, activeWindow.innerHeight - rect.height));
 			
 			// Use CSS custom properties for positioning
 			this.containerEl.style.setProperty('--dialog-left', `${newX}px`);
@@ -172,14 +176,19 @@ export class RAGProgressDialog {
 		};
 
 		titleEl.addEventListener('mousedown', onMouseDown);
-		document.addEventListener('mousemove', onMouseMove);
-		document.addEventListener('mouseup', onMouseUp);
+		activeDocument.addEventListener('mousemove', onMouseMove);
+		activeDocument.addEventListener('mouseup', onMouseUp);
 
 		// Store cleanup functions
 		this.cleanupFunctions.push(() => {
-			document.removeEventListener('mousemove', onMouseMove);
-			document.removeEventListener('mouseup', onMouseUp);
+			activeDocument.removeEventListener('mousemove', onMouseMove);
+			activeDocument.removeEventListener('mouseup', onMouseUp);
 		});
+	}
+
+	private getActiveDocument(): Document {
+		return this.app.workspace.activeLeaf?.view?.containerEl.ownerDocument
+			?? this.app.workspace.containerEl.ownerDocument;
 	}
 
 	/**

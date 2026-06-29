@@ -59,6 +59,24 @@ interface CandidateFile {
 	baseScore: number;
 }
 
+interface BookmarkItem {
+	type?: string;
+	path?: string;
+	items?: BookmarkItem[];
+}
+
+interface AppWithInternalPlugins {
+	internalPlugins?: {
+		plugins?: {
+			bookmarks?: {
+				instance?: {
+					items?: BookmarkItem[];
+				};
+			};
+		};
+	};
+}
+
 export class SearchService {
 	private app: App;
 	private ragService: RAGService | null = null;
@@ -1048,12 +1066,10 @@ export class SearchService {
 	async getBookmarkedMarkdownFiles(maxResults: number = 60): Promise<TFile[]> {
 		try {
 			const bookmarkedPaths = new Set<string>();
-			const appAny = this.app as unknown as Record<string, any>;
-			const internalPlugins = appAny.internalPlugins as Record<string, any> | undefined;
-			const bookmarksPlugin = internalPlugins?.plugins?.bookmarks;
-			const bookmarksItems = bookmarksPlugin?.instance?.items as Array<any> | undefined;
+			const appWithInternalPlugins = this.app as unknown as AppWithInternalPlugins;
+			const bookmarksItems = appWithInternalPlugins.internalPlugins?.plugins?.bookmarks?.instance?.items;
 
-			const collectBookmarkPaths = (items: Array<any> | undefined): void => {
+			const collectBookmarkPaths = (items: BookmarkItem[] | undefined): void => {
 				if (!items) return;
 				for (const item of items) {
 					if (!item) continue;

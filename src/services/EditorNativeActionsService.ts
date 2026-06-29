@@ -205,7 +205,7 @@ export class EditorNativeActionsService {
 				selectionTo,
 				filePath
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			LoggingUtility.error('Editor action failed', {
 				action: action.id,
 				source,
@@ -391,7 +391,8 @@ export class EditorNativeActionsService {
 			return () => undefined;
 		}
 
-		const indicator = document.createElement('div');
+		const activeDocument = hostEl.ownerDocument;
+		const indicator = activeDocument.createElement('div');
 		indicator.className = 'local-llm-editor-action-indicator';
 		indicator.setAttribute('role', 'status');
 		indicator.setAttribute('aria-live', 'polite');
