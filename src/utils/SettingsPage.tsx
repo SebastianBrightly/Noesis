@@ -972,9 +972,11 @@ export class SettingsPage extends PluginSettingTab
 		});
 		systemPromptTextArea.value = this.plugin.settings.systemPrompt;
 
-		systemPromptTextArea.addEventListener('input', async () => {
-			this.plugin.settings.systemPrompt = systemPromptTextArea.value;
-			await this.plugin.saveSettings();
+		systemPromptTextArea.addEventListener('input', () => {
+			void (async () => {
+				this.plugin.settings.systemPrompt = systemPromptTextArea.value;
+				await this.plugin.saveSettings();
+			})();
 		});
 
 		//**************************** */
@@ -1008,8 +1010,8 @@ export class SettingsPage extends PluginSettingTab
 				// keep a reference for programmatic updates
 				this.personalityDropdown = dropdown;
 				dropdown.setValue(current);
-				dropdown.onChange(async (value) => {
-					await this.handlePersonalityChange(value, containerEl);
+				dropdown.onChange((value) => {
+					void this.handlePersonalityChange(value, containerEl);
 				});
 
 
@@ -1282,13 +1284,15 @@ export class SettingsPage extends PluginSettingTab
 		const graphAdvancedContainer = containerEl.createDiv({ cls: 'local-llm-graph-advanced-settings' });
 		graphAdvancedContainer.style.display = graphAdvancedExpanded ? '' : 'none';
 
-		graphAdvancedToggle.addEventListener('click', async () => {
-			graphAdvancedExpanded = !graphAdvancedExpanded;
-			graphAdvancedContainer.style.display = graphAdvancedExpanded ? '' : 'none';
-			graphAdvancedToggle.setText(graphAdvancedExpanded ? 'Hide' : 'Advanced');
-			graphAdvancedToggle.setAttr('aria-expanded', graphAdvancedExpanded ? 'true' : 'false');
-			this.plugin.settings.graphRerankAdvancedExpanded = graphAdvancedExpanded;
-			await this.plugin.saveSettings();
+		graphAdvancedToggle.addEventListener('click', () => {
+			void (async () => {
+				graphAdvancedExpanded = !graphAdvancedExpanded;
+				graphAdvancedContainer.style.display = graphAdvancedExpanded ? '' : 'none';
+				graphAdvancedToggle.setText(graphAdvancedExpanded ? 'Hide' : 'Advanced');
+				graphAdvancedToggle.setAttr('aria-expanded', graphAdvancedExpanded ? 'true' : 'false');
+				this.plugin.settings.graphRerankAdvancedExpanded = graphAdvancedExpanded;
+				await this.plugin.saveSettings();
+			})();
 		});
 
 		addStyledSlider(
@@ -1624,46 +1628,48 @@ export class SettingsPage extends PluginSettingTab
 			cls: 'mod-cta'
 		});
 
-		testButton.addEventListener('click', async () => {
-			testButton.setText('Testing...');
-			testButton.disabled = true;
+		testButton.addEventListener('click', () => {
+			void (async () => {
+				testButton.setText('Testing...');
+				testButton.disabled = true;
 
-			try {
-				// Create a temporary LLM service to test
-				const { createLLMService } = await import('@/services/LLMService');
-				const llmService = createLLMService({
-					apiEndpoint: this.plugin.settings.apiEndpoint,
-					apiKey: this.plugin.settings.apiKey,
-					maxTokens: this.plugin.settings.maxTokens,
-					temperature: this.plugin.settings.temperature,
-					systemPrompt: this.plugin.settings.systemPrompt,
-					model: this.plugin.settings.model,
-					personalityPrompt: this.plugin.settings.personalityPrompt?.[0] ?? '',
-					personalityName: this.plugin.settings.personalityName
-				});
+				try {
+					// Create a temporary LLM service to test
+					const { createLLMService } = await import('@/services/LLMService');
+					const llmService = createLLMService({
+						apiEndpoint: this.plugin.settings.apiEndpoint,
+						apiKey: this.plugin.settings.apiKey,
+						maxTokens: this.plugin.settings.maxTokens,
+						temperature: this.plugin.settings.temperature,
+						systemPrompt: this.plugin.settings.systemPrompt,
+						model: this.plugin.settings.model,
+						personalityPrompt: this.plugin.settings.personalityPrompt?.[0] ?? '',
+						personalityName: this.plugin.settings.personalityName
+					});
 
-				// Validate config first
-				const validation = llmService.validateConfig();
-				if (!validation.valid) {
-					throw new Error(`Configuration errors:\n${validation.errors.join('\n')}`);
-				}
+					// Validate config first
+					const validation = llmService.validateConfig();
+					if (!validation.valid) {
+						throw new Error(`Configuration errors:\n${validation.errors.join('\n')}`);
+					}
 
-				// Test connection
-				const result = await llmService.testConnection();
+					// Test connection
+					const result = await llmService.testConnection();
 
-				if (result.success) {
-					new Notice('Connection successful. Your LLM server is working.');
+					if (result.success) {
+						new Notice('Connection successful. Your LLM server is working.');
+						testButton.setText('Test connection');
+						testButton.disabled = false;
+					} else {
+						throw new Error(result.error || 'Unknown connection error');
+					}
+				} catch (error) {
+					LoggingUtility.error('Connection test failed:', error);
+					new Notice(`Connection failed: ${this.getErrorMessage(error)}`);
 					testButton.setText('Test connection');
 					testButton.disabled = false;
-				} else {
-					throw new Error(result.error || 'Unknown connection error');
 				}
-			} catch (error) {
-				LoggingUtility.error('Connection test failed:', error);
-				new Notice(`Connection failed: ${this.getErrorMessage(error)}`);
-				testButton.setText('Test connection');
-				testButton.disabled = false;
-			}
+			})();
 		});
 
 		// Add spacing between buttons

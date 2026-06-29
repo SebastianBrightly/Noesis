@@ -173,29 +173,31 @@ export class ChatView extends ItemView {
 		// Reflect initial expanded state for accessibility
 		headerToggle.setAttribute('aria-expanded', initialHeaderExpanded ? 'true' : 'false');
 
-		headerToggle.addEventListener('click', async (e) => {
+		headerToggle.addEventListener('click', (e) => {
 			e.preventDefault();
-			const nowExpanded = !header.hasClass('expanded');
-			if (nowExpanded) {
-				header.addClass('expanded');
-				header.removeClass('collapsed');
-				headerToggle.textContent = 'Collapse';
-			} else {
-				header.removeClass('expanded');
-				header.addClass('collapsed');
-				headerToggle.textContent = 'Expand';
-			}
+			void (async () => {
+				const nowExpanded = !header.hasClass('expanded');
+				if (nowExpanded) {
+					header.addClass('expanded');
+					header.removeClass('collapsed');
+					headerToggle.textContent = 'Collapse';
+				} else {
+					header.removeClass('expanded');
+					header.addClass('collapsed');
+					headerToggle.textContent = 'Expand';
+				}
 
-			// Update aria attribute so assistive tech knows current state
-			headerToggle.setAttribute('aria-expanded', nowExpanded ? 'true' : 'false');
+				// Update aria attribute so assistive tech knows current state
+				headerToggle.setAttribute('aria-expanded', nowExpanded ? 'true' : 'false');
 
-			// Persist the new state in plugin settings
-			this.plugin.settings.headerExpanded = nowExpanded;
-			try {
-				await this.plugin.saveSettings();
-			} catch (err) {
-				LoggingUtility.error('Failed to save headerExpanded setting:', err);
-			}
+				// Persist the new state in plugin settings
+				this.plugin.settings.headerExpanded = nowExpanded;
+				try {
+					await this.plugin.saveSettings();
+				} catch (err) {
+					LoggingUtility.error('Failed to save headerExpanded setting:', err);
+				}
+			})();
 		});
 
 		// Create new chat button
@@ -204,8 +206,8 @@ export class ChatView extends ItemView {
 			text: 'New chat',
 			attr: { 'aria-label': 'Start new chat', 'type': 'button' }
 		});
-		newChatButton.addEventListener('click', async () => {
-			await this.startNewChat();
+		newChatButton.addEventListener('click', () => {
+			void this.startNewChat();
 		});
 
 		// Create copy conversation button (copies the whole conversation to clipboard)
@@ -224,21 +226,23 @@ export class ChatView extends ItemView {
 			attr: { 'aria-label': 'Summarize and save conversation', 'type': 'button' }
 		});
 		setIcon(summarizeButton, 'document');
-		summarizeButton.addEventListener('click', async () => {
-			summarizeButton.disabled = true;
-			try {
-				const conv = this.getConversationText();
-				this.lastConversationForSummary = conv;
-				const prompt = `Summarize the following conversation into a concise Obsidian markdown note. Provide a short title (one line) starting with '# ' followed by a brief summary and 3-6 bullet points of key takeaways. Keep total length under 250 words.\n\nConversation:\n${conv}`;
-				this.showSummaryPreview('Generating summary preview...');
-				const summary = await this.llmService.sendMessage(prompt);
-				this.showSummaryPreview(summary);
-			} catch (err) {
-				LoggingUtility.error('Error summarizing conversation:', err);
-				new Notice('❌ Failed to summarize conversation');
-			} finally {
-				summarizeButton.disabled = false;
-			}
+		summarizeButton.addEventListener('click', () => {
+			void (async () => {
+				summarizeButton.disabled = true;
+				try {
+					const conv = this.getConversationText();
+					this.lastConversationForSummary = conv;
+					const prompt = `Summarize the following conversation into a concise Obsidian markdown note. Provide a short title (one line) starting with '# ' followed by a brief summary and 3-6 bullet points of key takeaways. Keep total length under 250 words.\n\nConversation:\n${conv}`;
+					this.showSummaryPreview('Generating summary preview...');
+					const summary = await this.llmService.sendMessage(prompt);
+					this.showSummaryPreview(summary);
+				} catch (err) {
+					LoggingUtility.error('Error summarizing conversation:', err);
+					new Notice('❌ Failed to summarize conversation');
+				} finally {
+					summarizeButton.disabled = false;
+				}
+			})();
 		});
 
 		// Create context mode dropdown
@@ -261,19 +265,21 @@ export class ChatView extends ItemView {
 			.addOption(ContextMode.OPEN_NOTES, 'Open Tabs')
 			.addOption(ContextMode.SEARCH, 'All Notes')
 			.addOption(ContextMode.NONE, 'None')
-			.onChange(async (value) => {
-				this.contextMode = value as ContextMode;
-				// Save to default settings or selected connection profile
-				const activeConnection = this.getActiveConnection();
-				if (activeConnection) {
-					activeConnection.contextMode = this.contextMode;
-				} else {
-					this.plugin.settings.contextMode = this.contextMode;
-				}
-				await this.plugin.saveSettings();
-				this.updateScopeQueryInputVisibility();
-				// Update RAG status display
-				this.updateRAGStatus();
+			.onChange((value) => {
+				void (async () => {
+					this.contextMode = value as ContextMode;
+					// Save to default settings or selected connection profile
+					const activeConnection = this.getActiveConnection();
+					if (activeConnection) {
+						activeConnection.contextMode = this.contextMode;
+					} else {
+						this.plugin.settings.contextMode = this.contextMode;
+					}
+					await this.plugin.saveSettings();
+					this.updateScopeQueryInputVisibility();
+					// Update RAG status display
+					this.updateRAGStatus();
+				})();
 			});
 
 		// Set initial value based on plugin settings
@@ -288,13 +294,15 @@ export class ChatView extends ItemView {
 			}
 		});
 		this.scopeQueryInput.value = this.plugin.settings.scopeQuery || '';
-		this.scopeQueryInput.addEventListener('change', async () => {
+		this.scopeQueryInput.addEventListener('change', () => {
 			if (!this.scopeQueryInput) {
 				return;
 			}
 
-			this.plugin.settings.scopeQuery = this.scopeQueryInput.value.trim();
-			await this.plugin.saveSettings();
+			void (async () => {
+				this.plugin.settings.scopeQuery = this.scopeQueryInput.value.trim();
+				await this.plugin.saveSettings();
+			})();
 		});
 		this.updateScopeQueryInputVisibility();
 
@@ -329,22 +337,24 @@ export class ChatView extends ItemView {
 		const currentpersonality = this.plugin.settings.personalityName || '';
 		PersonalityDropdown.setValue(currentpersonality);
 
-		PersonalityDropdown.onChange(async (value) => {
-			this.plugin.settings.selectedPersonality = value === '' ? undefined : value;
-			this.plugin.settings.personalityName = value;
-			await this.plugin.saveSettings();
+		PersonalityDropdown.onChange((value) => {
+			void (async () => {
+				this.plugin.settings.selectedPersonality = value === '' ? undefined : value;
+				this.plugin.settings.personalityName = value;
+				await this.plugin.saveSettings();
 
-			// Notify other views so UI updates immediately
-			if (typeof this.plugin.notifyChatViewsOfSettingsChange === 'function') {
-				this.plugin.notifyChatViewsOfSettingsChange();
-			}
+				// Notify other views so UI updates immediately
+				if (typeof this.plugin.notifyChatViewsOfSettingsChange === 'function') {
+					this.plugin.notifyChatViewsOfSettingsChange();
+				}
 
-			// Apply immediately to the LLM service used by this view
-			this.updateLLMServiceFromSettings();
-			// If user selected Custom, open settings to edit the custom prompt
-			if (value === 'Custom') {
-				this.openPluginSettingsPage();
-			}
+				// Apply immediately to the LLM service used by this view
+				this.updateLLMServiceFromSettings();
+				// If user selected Custom, open settings to edit the custom prompt
+				if (value === 'Custom') {
+					this.openPluginSettingsPage();
+				}
+			})();
 		});
 
 		// Ensure personality dropdown reflects any later settings changes
@@ -373,12 +383,14 @@ export class ChatView extends ItemView {
 
 		const connectionDropdown = new DropdownComponent(this.connectionContainer);
 		this.connectionDropdown = connectionDropdown as DropdownComponentWithPrivateAPI;
-		connectionDropdown.onChange(async (value) => {
-			this.plugin.settings.activeAIConnectionId = value === '' ? undefined : value;
-			await this.plugin.saveSettings();
-			this.applyActiveConnectionContextModeToUI();
-			this.updateLLMServiceFromSettings();
-			this.updateRAGStatus();
+		connectionDropdown.onChange((value) => {
+			void (async () => {
+				this.plugin.settings.activeAIConnectionId = value === '' ? undefined : value;
+				await this.plugin.saveSettings();
+				this.applyActiveConnectionContextModeToUI();
+				this.updateLLMServiceFromSettings();
+				this.updateRAGStatus();
+			})();
 		});
 		this.ensureConnectionSelectorOptions();
 		LoggingUtility.log('Header with controls created');
@@ -677,14 +689,16 @@ export class ChatView extends ItemView {
 			cls: 'mod-cta',
 			attr: { type: 'button' }
 		});
-		reviewButton.addEventListener('click', async () => {
-			if (typeof this.plugin.markReviewLinkClicked === 'function') {
-				await this.plugin.markReviewLinkClicked();
-			}
-			window.open(reviewUrl, '_blank');
-			this.reviewPromptBanner.empty();
-			this.reviewPromptBanner.removeClass('local-llm-review-prompt-visible');
-			this.reviewPromptBanner.addClass('local-llm-review-prompt-hidden');
+		reviewButton.addEventListener('click', () => {
+			void (async () => {
+				if (typeof this.plugin.markReviewLinkClicked === 'function') {
+					await this.plugin.markReviewLinkClicked();
+				}
+				window.open(reviewUrl, '_blank');
+				this.reviewPromptBanner.empty();
+				this.reviewPromptBanner.removeClass('local-llm-review-prompt-visible');
+				this.reviewPromptBanner.addClass('local-llm-review-prompt-hidden');
+			})();
 		});
 
 		const dismissButton = actionContainer.createEl('button', {
@@ -969,7 +983,7 @@ export class ChatView extends ItemView {
 				const streamingMessage = this.messages.find(m => m.isStreaming);
 				if (streamingMessage) {
 					streamingMessage.isStreaming = false;
-					this.finalizeStreamingMessage(streamingMessage.id);
+					void this.finalizeStreamingMessage(streamingMessage.id);
 				}
 			} else {
 				// Handle actual errors
@@ -1585,42 +1599,44 @@ export class ChatView extends ItemView {
 					attr: { 'aria-label': 'Test connection to LLM server', 'type': 'button' }
 				});
 
-				refreshButton.addEventListener('click', async () => {
-					// Show loading state
-					refreshButton.textContent = '🔄 Testing...';
-					refreshButton.disabled = true;
+				refreshButton.addEventListener('click', () => {
+					void (async () => {
+						// Show loading state
+						refreshButton.textContent = '🔄 Testing...';
+						refreshButton.disabled = true;
 
-					try {
-						// Update LLM service with current settings
-						this.updateLLMServiceFromSettings();
+						try {
+							// Update LLM service with current settings
+							this.updateLLMServiceFromSettings();
 
-						// Test connection
-						const testResult = await this.llmService.testConnection();
+							// Test connection
+							const testResult = await this.llmService.testConnection();
 
-						if (testResult.success) {
-							// Connection successful - update the welcome message
-							const welcomeMessage = this.messages.find(m => m.id === 'welcome');
-							if (welcomeMessage) {
-								welcomeMessage.content = 'What\'s on your mind?';
-								// Re-render the message
-								this.messageContainer.empty();
-								for (const msg of this.messages) {
-									await this.renderMessage(msg);
+							if (testResult.success) {
+								// Connection successful - update the welcome message
+								const welcomeMessage = this.messages.find(m => m.id === 'welcome');
+								if (welcomeMessage) {
+									welcomeMessage.content = 'What\'s on your mind?';
+									// Re-render the message
+									this.messageContainer.empty();
+									for (const msg of this.messages) {
+										await this.renderMessage(msg);
+									}
 								}
+								new Notice('✅ Connection successful! You can now start chatting.', 3000);
+							} else {
+								// Connection failed
+								new Notice('❌ Connection failed. Please check your server settings.', 3000);
+								refreshButton.textContent = '🔄 Test connection';
+								refreshButton.disabled = false;
 							}
-							new Notice('✅ Connection successful! You can now start chatting.', 3000);
-						} else {
-							// Connection failed
+						} catch (error) {
+							LoggingUtility.error('Error testing connection:', error);
 							new Notice('❌ Connection failed. Please check your server settings.', 3000);
 							refreshButton.textContent = '🔄 Test connection';
 							refreshButton.disabled = false;
 						}
-					} catch (error) {
-						LoggingUtility.error('Error testing connection:', error);
-						new Notice('❌ Connection failed. Please check your server settings.', 3000);
-						refreshButton.textContent = '🔄 Test connection';
-						refreshButton.disabled = false;
-					}
+					})();
 				});
 			}
 		} else {
@@ -1636,17 +1652,19 @@ export class ChatView extends ItemView {
 			});
 			setIcon(copyButton, 'copy');
 
-			copyButton.addEventListener('click', async () => {
-				await navigator.clipboard.writeText(message.content);
+			copyButton.addEventListener('click', () => {
+				void (async () => {
+					await navigator.clipboard.writeText(message.content);
 
-				// Show success feedback
-				setIcon(copyButton, 'check');
-				copyButton.classList.add('copied');
+					// Show success feedback
+					setIcon(copyButton, 'check');
+					copyButton.classList.add('copied');
 
-				setTimeout(() => {
-					setIcon(copyButton, 'copy');
-					copyButton.classList.remove('copied');
-				}, 1000);
+					setTimeout(() => {
+						setIcon(copyButton, 'copy');
+						copyButton.classList.remove('copied');
+					}, 1000);
+				})();
 			});
 		}
 
@@ -1675,24 +1693,26 @@ export class ChatView extends ItemView {
 			});
 
 			// Add click handler for toggle
-			toggleLink.addEventListener('click', async (e) => {
+			toggleLink.addEventListener('click', (e) => {
 				e.preventDefault();
-				const currentVisibility = this.plugin.settings.contextNotesVisible;
-				const newVisibility = !currentVisibility;
+				void (async () => {
+					const currentVisibility = this.plugin.settings.contextNotesVisible;
+					const newVisibility = !currentVisibility;
 
-				// Update setting
-				this.plugin.settings.contextNotesVisible = newVisibility;
-				await this.plugin.saveSettings();
+					// Update setting
+					this.plugin.settings.contextNotesVisible = newVisibility;
+					await this.plugin.saveSettings();
 
-				// Update toggle text
-				toggleLink.textContent = newVisibility ? 'Hide' : 'Show';
+					// Update toggle text
+					toggleLink.textContent = newVisibility ? 'Hide' : 'Show';
 
-				// Show/hide notes list
-				if (newVisibility) {
-					notesList.removeClass('local-llm-used-notes-list-hidden');
-				} else {
-					notesList.addClass('local-llm-used-notes-list-hidden');
-				}
+					// Show/hide notes list
+					if (newVisibility) {
+						notesList.removeClass('local-llm-used-notes-list-hidden');
+					} else {
+						notesList.addClass('local-llm-used-notes-list-hidden');
+					}
+				})();
 			});
 
 			const notesList = notesInfoEl.createEl('div', {
@@ -1807,7 +1827,7 @@ export class ChatView extends ItemView {
 		if (streamingMessage) {
 			streamingMessage.isStreaming = false;
 			// Re-render the message to remove the streaming cursor and apply markdown
-			this.finalizeStreamingMessage(streamingMessage.id);
+			void this.finalizeStreamingMessage(streamingMessage.id);
 		}
 	}
 
@@ -2145,77 +2165,83 @@ Once your server is running, click the test connection button below.`;
 		updateSaveButtonState();
 		editor.addEventListener('input', updateSaveButtonState);
 
-		saveBtn.addEventListener('click', async () => {
-			const content = editor.value;
-			if (content.trim().length === 0 || isPlaceholderSummary(content)) {
-				new Notice('Please wait for a generated summary before saving.');
-				return;
-			}
-			const safeName = `Noesis Summary ${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
-			try {
-				await this.app.vault.create(safeName, content);
-				new Notice(`✅ Saved summary: ${safeName}`);
-				this.hideSummaryPreview();
-				// Open the newly created file
-				try {
-					await this.openCreatedNote(safeName);
-				} catch (e) {
-					// ignore open errors
+		saveBtn.addEventListener('click', () => {
+			void (async () => {
+				const content = editor.value;
+				if (content.trim().length === 0 || isPlaceholderSummary(content)) {
+					new Notice('Please wait for a generated summary before saving.');
+					return;
 				}
-			} catch (e) {
-				LoggingUtility.error('Failed to save summary note:', e);
-				new Notice('❌ Failed to save summary');
-			}
+				const safeName = `Noesis Summary ${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
+				try {
+					await this.app.vault.create(safeName, content);
+					new Notice(`✅ Saved summary: ${safeName}`);
+					this.hideSummaryPreview();
+					// Open the newly created file
+					try {
+						await this.openCreatedNote(safeName);
+					} catch (e) {
+						// ignore open errors
+					}
+				} catch (e) {
+					LoggingUtility.error('Failed to save summary note:', e);
+					new Notice('❌ Failed to save summary');
+				}
+			})();
 		});
 
-		saveBothBtn.addEventListener('click', async () => {
-			const content = editor.value;
-			if (content.trim().length === 0 || isPlaceholderSummary(content)) {
-				new Notice('Please wait for a generated summary before saving.');
-				return;
-			}
-			const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-			const summaryName = `Noesis Summary ${timestamp}.md`;
-			const convoName = `Noesis Conversation ${timestamp}.md`;
-			const convoText = this.getConversationText();
-			try {
-				await this.app.vault.create(summaryName, content);
-				await this.app.vault.create(convoName, convoText);
-				new Notice(`✅ Saved ${summaryName} and ${convoName}`);
-				this.hideSummaryPreview();
-				// Open the summary file
-				try {
-					await this.openCreatedNote(summaryName);
-				} catch (e) {
-					// ignore open errors
+		saveBothBtn.addEventListener('click', () => {
+			void (async () => {
+				const content = editor.value;
+				if (content.trim().length === 0 || isPlaceholderSummary(content)) {
+					new Notice('Please wait for a generated summary before saving.');
+					return;
 				}
-			} catch (e) {
-				LoggingUtility.error('Failed to save summary and conversation:', e);
-				new Notice('❌ Failed to save files');
-			}
+				const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+				const summaryName = `Noesis Summary ${timestamp}.md`;
+				const convoName = `Noesis Conversation ${timestamp}.md`;
+				const convoText = this.getConversationText();
+				try {
+					await this.app.vault.create(summaryName, content);
+					await this.app.vault.create(convoName, convoText);
+					new Notice(`✅ Saved ${summaryName} and ${convoName}`);
+					this.hideSummaryPreview();
+					// Open the summary file
+					try {
+						await this.openCreatedNote(summaryName);
+					} catch (e) {
+						// ignore open errors
+					}
+				} catch (e) {
+					LoggingUtility.error('Failed to save summary and conversation:', e);
+					new Notice('❌ Failed to save files');
+				}
+			})();
 		});
 
 		cancelBtn.addEventListener('click', () => {
 			this.hideSummaryPreview();
 		});
 
-		resubmitBtn.addEventListener('click', async () => {
-			if (!this.lastConversationForSummary) return;
-			resubmitBtn.disabled = true;
-			saveBtn.disabled = true;
-			saveBothBtn.disabled = true;
-			try {
-				const prompt = `Please summarize the following conversation again, but make it shorter and more concise (max 150 words).\n\nConversation:\n${this.lastConversationForSummary}`;
-				const newSummary = await this.llmService.sendMessage(prompt);
-				editor.value = newSummary;
-				updateSaveButtonState();
-			} catch (err) {
-				LoggingUtility.error('Error re-summarizing:', err);
-				new Notice('❌ Failed to resummarize');
-			} finally {
-				resubmitBtn.disabled = false;
-				updateSaveButtonState();
-			}
+		resubmitBtn.addEventListener('click', () => {
+			void (async () => {
+				if (!this.lastConversationForSummary) return;
+				resubmitBtn.disabled = true;
+				saveBtn.disabled = true;
+				saveBothBtn.disabled = true;
+				try {
+					const prompt = `Please summarize the following conversation again, but make it shorter and more concise (max 150 words).\n\nConversation:\n${this.lastConversationForSummary}`;
+					const newSummary = await this.llmService.sendMessage(prompt);
+					editor.value = newSummary;
+					updateSaveButtonState();
+				} catch (err) {
+					LoggingUtility.error('Error re-summarizing:', err);
+					new Notice('❌ Failed to resummarize');
+				} finally {
+					resubmitBtn.disabled = false;
+					updateSaveButtonState();
+				}
+			})();
 		});
 	}
 

@@ -583,31 +583,33 @@ export class RAGService {
 	 */
 	private async runBackgroundMaintenance(operation: MaintenanceOperation): Promise<void> {
 		// Use setTimeout to run in background without blocking
-		setTimeout(async () => {
-			try {
-				const progressCallback = this.createAutoMaintenanceProgressCallback();
+		setTimeout(() => {
+			void (async () => {
+				try {
+					const progressCallback = this.createAutoMaintenanceProgressCallback();
 
-				if (operation === MaintenanceOperation.REBUILD) {
-					await this.forceRebuildIndex(progressCallback);
-				} else {
-					await this.buildIndex(progressCallback);
-				}
-
-				// Notify completion
-				if (this.initOptions.completionCallback) {
-					this.initOptions.completionCallback();
-				}
-			} catch (error) {
-				LoggingUtility.error(`Background maintenance (${operation}) failed:`, error);
-				if (!this.initOptions.silentMode) {
-					// Check if it's a connection error and show appropriate message
-					if (this.isLmStudioConnectionError(error)) {
-						new Notice(`RAG database ${operation} failed: Cannot connect to LM Studio. Please ensure LM Studio is running with an embedding model loaded.`, 10000);
+					if (operation === MaintenanceOperation.REBUILD) {
+						await this.forceRebuildIndex(progressCallback);
 					} else {
-						new Notice(`RAG database ${operation} failed: ${this.getErrorMessage(error)}`, 8000);
+						await this.buildIndex(progressCallback);
+					}
+
+					// Notify completion
+					if (this.initOptions.completionCallback) {
+						this.initOptions.completionCallback();
+					}
+				} catch (error) {
+					LoggingUtility.error(`Background maintenance (${operation}) failed:`, error);
+					if (!this.initOptions.silentMode) {
+						// Check if it's a connection error and show appropriate message
+						if (this.isLmStudioConnectionError(error)) {
+							new Notice(`RAG database ${operation} failed: Cannot connect to LM Studio. Please ensure LM Studio is running with an embedding model loaded.`, 10000);
+						} else {
+							new Notice(`RAG database ${operation} failed: ${this.getErrorMessage(error)}`, 8000);
+						}
 					}
 				}
-			}
+			})();
 		}, 100); // Small delay to ensure UI is ready
 	}
 
@@ -1218,14 +1220,16 @@ export class RAGService {
 				this.pendingActiveFileUpdates.delete(file.path);
 
 				// Process deletions immediately as they're quick and file is gone
-				setTimeout(async () => {
-					try {
-						LoggingUtility.log(`File deleted: ${file.path}`);
-						await this.vectorDB.removeFileDocuments(file.path);
-						await this.vectorDB.save();
-					} catch (error) {
-						LoggingUtility.error(`Error processing file deletion: ${file.path}`, error);
-					}
+				setTimeout(() => {
+					void (async () => {
+						try {
+							LoggingUtility.log(`File deleted: ${file.path}`);
+							await this.vectorDB.removeFileDocuments(file.path);
+							await this.vectorDB.save();
+						} catch (error) {
+							LoggingUtility.error(`Error processing file deletion: ${file.path}`, error);
+						}
+					})();
 				}, 0);
 			}
 		});
@@ -1373,25 +1377,27 @@ export class RAGService {
 		}
 
 		// Set new timeout to process the file update after a brief delay
-		const timeout = setTimeout(async () => {
-			try {
-				this.fileUpdateQueue.delete(filePath);
+		const timeout = setTimeout(() => {
+			void (async () => {
+				try {
+					this.fileUpdateQueue.delete(filePath);
 
-				// Double-check if file is still active before processing
-				if (operation === 'modify' && this.isFileCurrentlyActive(file)) {
-					LoggingUtility.log(`File became active during queue delay, skipping RAG update: ${file.path}`);
-					// Track this file for later processing when it becomes inactive
-					this.pendingActiveFileUpdates.add(file.path);
-					return;
+					// Double-check if file is still active before processing
+					if (operation === 'modify' && this.isFileCurrentlyActive(file)) {
+						LoggingUtility.log(`File became active during queue delay, skipping RAG update: ${file.path}`);
+						// Track this file for later processing when it becomes inactive
+						this.pendingActiveFileUpdates.add(file.path);
+						return;
+					}
+
+					// Remove from pending active files if it was there
+					this.pendingActiveFileUpdates.delete(filePath);
+
+					await this.processFileUpdateBackground(file, operation, oldPath);
+				} catch (error) {
+					LoggingUtility.error(`Error processing file update for ${filePath}:`, error);
 				}
-
-				// Remove from pending active files if it was there
-				this.pendingActiveFileUpdates.delete(filePath);
-
-				await this.processFileUpdateBackground(file, operation, oldPath);
-			} catch (error) {
-				LoggingUtility.error(`Error processing file update for ${filePath}:`, error);
-			}
+			})();
 		}, 500); // 500ms debounce delay
 
 		this.fileUpdateQueue.set(filePath, timeout);

@@ -47,31 +47,35 @@ export class EditorActionResultModal extends Modal {
 
 		closeButton.addEventListener('click', () => this.close());
 
-		saveButton.addEventListener('click', async () => {
-			saveButton.disabled = true;
-			applyButton.disabled = true;
-			try {
-				await this.config.onSave();
-			} catch (error) {
-				new Notice(`Failed to save response: ${error instanceof Error ? error.message : String(error)}`);
-			} finally {
-				saveButton.disabled = false;
-				applyButton.disabled = false;
-			}
+		saveButton.addEventListener('click', () => {
+			void (async () => {
+				saveButton.disabled = true;
+				applyButton.disabled = true;
+				try {
+					await this.config.onSave();
+				} catch (error) {
+					new Notice(`Failed to save response: ${error instanceof Error ? error.message : String(error)}`);
+				} finally {
+					saveButton.disabled = false;
+					applyButton.disabled = false;
+				}
+			})();
 		});
 
-		applyButton.addEventListener('click', async () => {
-			saveButton.disabled = true;
-			applyButton.disabled = true;
-			try {
-				await this.config.onApply();
-				this.close();
-			} catch (error) {
-				new Notice(`Failed to apply response: ${error instanceof Error ? error.message : String(error)}`);
-			} finally {
-				saveButton.disabled = false;
-				applyButton.disabled = false;
-			}
+		applyButton.addEventListener('click', () => {
+			void (async () => {
+				saveButton.disabled = true;
+				applyButton.disabled = true;
+				try {
+					await this.config.onApply();
+					this.close();
+				} catch (error) {
+					new Notice(`Failed to apply response: ${error instanceof Error ? error.message : String(error)}`);
+				} finally {
+					saveButton.disabled = false;
+					applyButton.disabled = false;
+				}
+			})();
 		});
 	}
 

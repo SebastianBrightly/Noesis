@@ -109,34 +109,38 @@ export class FirstRunWizardModal extends Modal {
 
 		const actions = contentEl.createDiv({ cls: 'noesis-first-run-actions' });
 		const skipButton = actions.createEl('button', { text: 'Skip for now' });
-		skipButton.addEventListener('click', async () => {
-			this.plugin.settings.hasCompletedFirstRunWizard = true;
-			await this.plugin.saveSettings();
-			new Notice('First-run wizard skipped. Use command palette to reopen it anytime.');
-			this.close();
+		skipButton.addEventListener('click', () => {
+			void (async () => {
+				this.plugin.settings.hasCompletedFirstRunWizard = true;
+				await this.plugin.saveSettings();
+				new Notice('First-run wizard skipped. Use command palette to reopen it anytime.');
+				this.close();
+			})();
 		});
 
 		const createButton = actions.createEl('button', {
 			text: 'Create Workspace',
 			cls: 'mod-cta'
 		});
-		createButton.addEventListener('click', async () => {
-			createButton.disabled = true;
-			skipButton.disabled = true;
-			try {
-				const summary = await this.createResearchWorkspace({
-					rootFolder: this.rootFolder,
-					templateId: this.selectedTemplateId,
-					createTemplates: this.createTemplates,
-					openOverviewAfterCreate: this.openOverviewAfterCreate
-				});
-				new Notice(`Workspace created: ${summary.rootFolder} (${summary.createdFolders} folders, ${summary.createdFiles} files)`);
-				this.close();
-			} catch (error) {
-				new Notice(`Failed to create workspace: ${error instanceof Error ? error.message : String(error)}`);
-				createButton.disabled = false;
-				skipButton.disabled = false;
-			}
+		createButton.addEventListener('click', () => {
+			void (async () => {
+				createButton.disabled = true;
+				skipButton.disabled = true;
+				try {
+					const summary = await this.createResearchWorkspace({
+						rootFolder: this.rootFolder,
+						templateId: this.selectedTemplateId,
+						createTemplates: this.createTemplates,
+						openOverviewAfterCreate: this.openOverviewAfterCreate
+					});
+					new Notice(`Workspace created: ${summary.rootFolder} (${summary.createdFolders} folders, ${summary.createdFiles} files)`);
+					this.close();
+				} catch (error) {
+					new Notice(`Failed to create workspace: ${error instanceof Error ? error.message : String(error)}`);
+					createButton.disabled = false;
+					skipButton.disabled = false;
+				}
+			})();
 		});
 	}
 
