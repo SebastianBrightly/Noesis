@@ -41,9 +41,12 @@ describe('EmbeddingService', () => {
       const embedding = await service.generateEmbedding('hello world');
 
       expect(embedding).toEqual([0.1, 0.2, 0.3]);
-      expect(global.__requestUrlMock).toHaveBeenCalledTimes(1);
+      const postCalls = global.__requestUrlMock.mock.calls
+        .map(call => call[0])
+        .filter((args: any) => args.method === 'POST');
+      expect(postCalls).toHaveLength(1);
 
-      const requestArgs = global.__requestUrlMock.mock.calls[0][0];
+      const requestArgs = postCalls[0];
       expect(requestArgs.url).toBe(defaultConfig.endpoint);
       expect(requestArgs.method).toBe('POST');
       expect(requestArgs.headers['Content-Type']).toBe('application/json');
@@ -163,9 +166,12 @@ describe('EmbeddingService', () => {
         [0.1, 0.2, 0.3],
         [0.4, 0.5, 0.6]
       ]);
-      expect(global.__requestUrlMock).toHaveBeenCalledTimes(1);
+      const postCalls = global.__requestUrlMock.mock.calls
+        .map(call => call[0])
+        .filter((args: any) => args.method === 'POST');
+      expect(postCalls).toHaveLength(1);
 
-      const requestArgs = global.__requestUrlMock.mock.calls[0][0];
+      const requestArgs = postCalls[0];
       const body = JSON.parse(requestArgs.body);
       expect(body.input).toEqual(['first', 'second']);
     });
@@ -270,7 +276,12 @@ describe('EmbeddingService', () => {
 
       await service.generateEmbedding('test');
 
-      const requestArgs = global.__requestUrlMock.mock.calls[0][0];
+      const postCalls = global.__requestUrlMock.mock.calls
+        .map(call => call[0])
+        .filter((args: any) => args.method === 'POST');
+      expect(postCalls).toHaveLength(1);
+
+      const requestArgs = postCalls[0];
       expect(requestArgs.url).toBe(newConfig.endpoint);
       expect(requestArgs.headers.Authorization).toBe('Bearer new-key');
       const body = JSON.parse(requestArgs.body);

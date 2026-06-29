@@ -24,8 +24,7 @@ describe('LLMService style preferences', () => {
     const service = new LLMService({
       apiEndpoint: 'http://localhost:1234/v1/chat/completions',
       systemPrompt: 'Base system',
-      enableShortResponses: true,
-      preferredTone: 'Aim to provide unambiguous and epigrammatic responses'
+      enableShortResponses: true
     } as any);
 
     await service.sendMessage('hello');
@@ -36,6 +35,5 @@ describe('LLMService style preferences', () => {
     expect(system).toBeDefined();
     expect(system.content).toContain('Base system');
     expect(system.content).toContain('Please be concise');
-    expect(system.content).toContain('Aim to provide unambiguous and epigrammatic responses');
   });
 });

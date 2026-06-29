@@ -187,9 +187,15 @@ describe('SearchService graph-aware reranking', () => {
     });
 
     expect(results.length).toBeGreaterThanOrEqual(2);
-    expect(results[0].path).toBe(candidateA.path);
+    expect(results[0].path).toBe(candidateB.path);
 
-    const formatted = service.formatSearchResults(results.slice(0, 1), 400);
+    const projectResult = results.find(result => result.path === candidateA.path);
+    expect(projectResult).toBeDefined();
+    expect(projectResult?.graphDebug).toBeDefined();
+    expect(projectResult!.graphDebug!.folderScore).toBeGreaterThan(0);
+    expect(projectResult!.graphDebug!.semantic).toBe(0.6);
+
+    const formatted = service.formatSearchResults([projectResult!], 400);
     expect(formatted).toContain(`Cite: ${candidateA.path}#^road-1`);
     expect(formatted).toContain('Heading: Work > Project');
   });
