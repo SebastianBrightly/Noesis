@@ -127,7 +127,7 @@ export class EmbeddingService {
 
 	private isTimeoutLikeError(message: string): boolean {
 		const m = message.toLowerCase();
-		return m.includes('timed out') || m.includes('timeout');
+		return m.includes('timed out') || m.includes('etimedout') || m.includes('timeout exceeded');
 	}
 
 	private shouldSplitAndRetry(message: string): boolean {
@@ -417,13 +417,18 @@ export class EmbeddingService {
 			}
 
 			const rawResponseData: unknown = response.json;
+			if (!rawResponseData || typeof rawResponseData !== 'object') {
+				throw new Error('Unexpected embedding response format');
+			}
+
+			const responseDataCandidate = rawResponseData as { data?: unknown };
+			if (!Array.isArray(responseDataCandidate.data) || responseDataCandidate.data.length === 0) {
+				throw new Error('No embedding data returned from API');
+			}
 			if (!isEmbeddingResponse(rawResponseData)) {
 				throw new Error('Unexpected embedding response format');
 			}
 			const responseData = rawResponseData;
-			if (!responseData.data || responseData.data.length === 0) {
-				throw new Error('No embedding data returned from API');
-			}
 
 			LoggingUtility.log('Embedding request completed', {
 				durationMs: Date.now() - started,

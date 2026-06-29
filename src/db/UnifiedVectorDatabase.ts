@@ -6,6 +6,8 @@ import sqlWasm from 'sql.js/dist/sql-wasm.wasm';
 import { MigrationRunner } from './MigrationRunner';
 import type { SqliteDatabase, SqliteModule } from './SqliteTypes';
 
+type InitSqlJs = (config: { wasmBinary: unknown }) => Promise<SqliteModule>;
+
 export interface VectorDocument {
 	id: string; // unique id for the paragraph (e.g., "file.md#p1" or "image.png#c1")
 	vector: number[]; // embedding vector
@@ -176,7 +178,8 @@ export class UnifiedVectorDatabase {
 
 			// Open database connection
 			// Load WASM file from imported binary (inlined by esbuild)
-			const SQL = await initSqlJs({
+			const initSqlJsTyped = initSqlJs as unknown as InitSqlJs;
+			const SQL = await initSqlJsTyped({
 				wasmBinary: sqlWasm
 			}) as unknown as SqliteModule;
 

@@ -60,6 +60,10 @@ interface DropdownComponentWithPrivateAPI extends DropdownComponent {
 	};
 }
 
+interface WorkspaceWithOpenLinkText {
+	openLinkText: (path: string, sourcePath: string, newLeaf?: boolean) => unknown;
+}
+
 export class ChatView extends ItemView {
 	private messages: ChatMessage[] = [];
 	private messageContainer: HTMLElement;
@@ -2078,6 +2082,29 @@ Once your server is running, click the test connection button below.`;
 		this.ragStatusArea.addClass('local-llm-rag-status-hidden');
 	}
 
+	private getWorkspaceWithOpenLinkText(): WorkspaceWithOpenLinkText | null {
+		const workspaceCandidate: unknown = this.app.workspace;
+		if (!workspaceCandidate || typeof workspaceCandidate !== 'object') {
+			return null;
+		}
+
+		const openLinkText = (workspaceCandidate as { openLinkText?: unknown }).openLinkText;
+		if (typeof openLinkText !== 'function') {
+			return null;
+		}
+
+		return workspaceCandidate as WorkspaceWithOpenLinkText;
+	}
+
+	private async openCreatedNote(path: string): Promise<void> {
+		const workspace = this.getWorkspaceWithOpenLinkText();
+		if (!workspace) {
+			return;
+		}
+
+		await workspace.openLinkText(path, '', true);
+	}
+
 	/**
 	 * Called when RAG indexing completes
 	 */
@@ -2131,7 +2158,7 @@ Once your server is running, click the test connection button below.`;
 				this.hideSummaryPreview();
 				// Open the newly created file
 				try {
-					await (this.app.workspace as any).openLinkText(safeName, '', true);
+					await this.openCreatedNote(safeName);
 				} catch (e) {
 					// ignore open errors
 				}
@@ -2158,7 +2185,7 @@ Once your server is running, click the test connection button below.`;
 				this.hideSummaryPreview();
 				// Open the summary file
 				try {
-					await (this.app.workspace as any).openLinkText(summaryName, '', true);
+					await this.openCreatedNote(summaryName);
 				} catch (e) {
 					// ignore open errors
 				}

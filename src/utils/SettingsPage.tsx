@@ -472,12 +472,14 @@ export class SettingsPage extends PluginSettingTab
 
 		const previewBox = containerEl.querySelector('.local-llm-personality-preview') as HTMLElement;
 		if (previewBox) {
-			const selectedPersonality = Array.isArray(LocalLLMSettings.personalityName)
-				? (LocalLLMSettings.personalityName[0] || '')
-				: (LocalLLMSettings.personalityName || '');
-			const selectedPersonalityPrompt = Array.isArray(LocalLLMSettings.personalityPrompt)
-				? (LocalLLMSettings.personalityPrompt[0] || '')
-				: (LocalLLMSettings.personalityPrompt || '');
+			const selectedPersonalityValue: unknown = Array.isArray(LocalLLMSettings.personalityName)
+				? LocalLLMSettings.personalityName[0]
+				: LocalLLMSettings.personalityName;
+			const selectedPersonality = typeof selectedPersonalityValue === 'string' ? selectedPersonalityValue : '';
+			const selectedPersonalityPromptValue: unknown = Array.isArray(LocalLLMSettings.personalityPrompt)
+				? LocalLLMSettings.personalityPrompt[0]
+				: LocalLLMSettings.personalityPrompt;
+			const selectedPersonalityPrompt = typeof selectedPersonalityPromptValue === 'string' ? selectedPersonalityPromptValue : '';
 			previewBox.textContent = personalityMap[selectedPersonality.toUpperCase()] || selectedPersonalityPrompt || 'No traits found for this personality. Please check your settings.';
 		}
 	}
