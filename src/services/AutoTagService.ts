@@ -309,6 +309,25 @@ export class AutoTagService {
 			})
 		);
 
+		this.plugin.registerEvent(
+			(this.plugin.app.workspace as any).on('editor-menu', (menu: Menu, _editor: unknown, view: MarkdownView) => {
+				const file = view?.file;
+				if (!(file instanceof TFile) || file.extension.toLowerCase() !== 'md') {
+					return;
+				}
+
+				menu.addSeparator();
+				menu.addItem((item) => {
+					item
+						.setTitle('Noesis: Auto tag this note')
+						.setIcon('tags')
+						.onClick(() => {
+							void this.autoTagFile(file, 'context-menu');
+						});
+				});
+			})
+		);
+
 		LoggingUtility.log('Auto tag service registered');
 	}
 
