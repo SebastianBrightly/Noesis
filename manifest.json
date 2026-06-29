@@ -1,7 +1,7 @@
 {
   "id": "noesis",
   "name": "Noesis",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "minAppVersion": "1.8.10",
   "description": "Ask questions across your notes and get clear, grounded answers. Noesis runs locally on your own LLM by default and keeps your knowledge on your machine. External AI connections are supported. Built for simplicity, not power users.",
   "author": "Sebastian Brightly",
