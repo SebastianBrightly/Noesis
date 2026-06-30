@@ -678,7 +678,7 @@ export class SettingsPage extends PluginSettingTab
 
 		// Load models automatically when settings are displayed
 		// Use setTimeout to ensure the dropdown is fully initialized first
-		setTimeout(() => {
+		window.setTimeout(() => {
 			void this.loadAvailableModels();
 		}, 0);
 		//**************************** */
@@ -1427,7 +1427,7 @@ export class SettingsPage extends PluginSettingTab
 				await this.loadAvailableEmbeddingModels();
 			}));
 
-		setTimeout(() => {
+		window.setTimeout(() => {
 			void this.loadAvailableEmbeddingModels();
 		}, 0);
 

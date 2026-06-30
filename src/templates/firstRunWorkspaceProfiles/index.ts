@@ -23,10 +23,23 @@ const workspaceProfileTemplates: Record<WorkspaceProfileTemplateId, WorkspacePro
 
 export const DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID: WorkspaceProfileTemplateId = 'academic-research-analysis';
 
-export const WORKSPACE_PROFILE_OPTIONS: WorkspaceProfileOption[] = Object.values(workspaceProfileTemplates).map((template) => ({
-	id: template.id,
-	label: template.label
-}));
+const WORKSPACE_PROFILE_TEMPLATE_IDS: WorkspaceProfileTemplateId[] = [
+	'personal-cognitive',
+	'professional-operational',
+	'academic-research-analysis',
+	'karpathy-blank-start',
+	'health-medical',
+	'financial',
+	'content-creative'
+];
+
+export const WORKSPACE_PROFILE_OPTIONS: WorkspaceProfileOption[] = WORKSPACE_PROFILE_TEMPLATE_IDS.map((templateId) => {
+	const template = workspaceProfileTemplates[templateId];
+	return {
+		id: template.id,
+		label: template.label
+	};
+});
 
 export function getWorkspaceProfileTemplateById(templateId: WorkspaceProfileTemplateId): WorkspaceProfileTemplate {
 	return workspaceProfileTemplates[templateId] ?? workspaceProfileTemplates[DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID];

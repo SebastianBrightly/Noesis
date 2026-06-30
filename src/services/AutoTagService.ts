@@ -397,7 +397,7 @@ export class AutoTagService {
 		const normalizedBody = noteBody.toLowerCase();
 		const scored = dictionaryTags
 			.map((tag) => {
-				const segments = tag.split(/[\/-]/).filter((segment) => segment.length > 2);
+				const segments = tag.split(/[/-]/).filter((segment) => segment.length > 2);
 				let score = 0;
 				for (const segment of segments) {
 					if (normalizedBody.includes(segment)) {
@@ -636,7 +636,7 @@ export class AutoTagService {
 				}
 
 				if (workloadProfile.delayMs > 0) {
-					await new Promise((resolve) => setTimeout(resolve, workloadProfile.delayMs));
+					await new Promise((resolve) => window.setTimeout(resolve, workloadProfile.delayMs));
 				}
 			}
 		} catch (error: unknown) {

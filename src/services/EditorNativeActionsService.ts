@@ -65,7 +65,7 @@ const ACTIONS: EditorActionDefinition[] = [
 		menuTitle: 'Noesis: Create tasks from selection',
 		menuIcon: 'check-square',
 		buildPrompt: (selection) =>
-			`Convert the following text into an actionable markdown task list. Return only tasks in \"- [ ]\" format.\n\nText:\n"""\n${selection}\n"""`,
+			`Convert the following text into an actionable markdown task list. Return only tasks in "- [ ]" format.\n\nText:\n"""\n${selection}\n"""`,
 		handlingMode: 'insert-below-cursor',
 		applyButtonLabel: 'Paste under highlighted section',
 		prefix: '### Tasks\n',
@@ -418,16 +418,30 @@ export class EditorNativeActionsService {
 
 	private getEditorHostElement(view: MarkdownView | MarkdownFileInfo | null | undefined): HTMLElement | null {
 		const maybeView = view as MarkdownView;
-		if (maybeView && maybeView.contentEl instanceof HTMLElement) {
+		if (maybeView && this.isHTMLElementCrossWindow(maybeView.contentEl)) {
 			return maybeView.contentEl;
 		}
 
 		const activeMarkdownView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-		if (activeMarkdownView?.contentEl instanceof HTMLElement) {
+		if (this.isHTMLElementCrossWindow(activeMarkdownView?.contentEl)) {
 			return activeMarkdownView.contentEl;
 		}
 
 		return null;
+	}
+
+	private isHTMLElementCrossWindow(value: unknown): value is HTMLElement {
+		if (!value || typeof value !== 'object') {
+			return false;
+		}
+
+		const maybeElement = value as { ownerDocument?: Document };
+		const defaultView = maybeElement.ownerDocument?.defaultView;
+		if (!defaultView) {
+			return false;
+		}
+
+		return value instanceof defaultView.HTMLElement;
 	}
 
 	private getSelectionRectWithinHost(hostEl: HTMLElement): DOMRect | null {

@@ -84,7 +84,7 @@ export class RAGService {
 	private indexingAbortController?: AbortController;
 	private progressCallback?: ProgressCallback;
 	private initOptions: RAGInitializationOptions;
-	private fileUpdateQueue: Map<string, NodeJS.Timeout> = new Map();
+	private fileUpdateQueue: Map<string, number> = new Map();
 	private isProcessingFileUpdates: boolean = false;
 	private pendingActiveFileUpdates: Set<string> = new Set();
 	private activeFileCheckInterval?: NodeJS.Timeout;
@@ -423,7 +423,7 @@ export class RAGService {
 
 					// Yield control periodically
 					if (i % 3 === 0) {
-						await new Promise(resolve => setTimeout(resolve, 0));
+						await new Promise(resolve => window.setTimeout(resolve, 0));
 					}
 
 				} catch (error) {
@@ -584,7 +584,7 @@ export class RAGService {
 	 */
 	private async runBackgroundMaintenance(operation: MaintenanceOperation): Promise<void> {
 		// Use setTimeout to run in background without blocking
-		setTimeout(voidAsync(async () => {
+		window.setTimeout(voidAsync(async () => {
 			try {
 				const progressCallback = this.createAutoMaintenanceProgressCallback();
 
@@ -1129,7 +1129,7 @@ export class RAGService {
 
 					// Yield control periodically
 					if (i % 5 === 0) {
-						await new Promise(resolve => setTimeout(resolve, 0));
+						await new Promise(resolve => window.setTimeout(resolve, 0));
 					}
 
 				} catch (error) {
@@ -1231,7 +1231,7 @@ export class RAGService {
 				this.pendingActiveFileUpdates.delete(file.path);
 
 				// Process deletions immediately as they're quick and file is gone
-				setTimeout(voidAsync(async () => {
+				window.setTimeout(voidAsync(async () => {
 					try {
 						LoggingUtility.log(`File deleted: ${file.path}`);
 						await this.vectorDB.removeFileDocuments(file.path);
@@ -1276,7 +1276,7 @@ export class RAGService {
 					this.pendingActiveFileUpdates.delete(previousActiveFile);
 
 					// Process immediately since the file is no longer active
-					setTimeout(() => {
+					window.setTimeout(() => {
 						this.queueFileUpdate(file, 'modify');
 					}, 100); // Small delay to ensure the switch is complete
 				}
@@ -1386,7 +1386,7 @@ export class RAGService {
 		}
 
 		// Set new timeout to process the file update after a brief delay
-		const timeout = setTimeout(voidAsync(async () => {
+		const timeout = window.setTimeout(voidAsync(async () => {
 			try {
 				this.fileUpdateQueue.delete(filePath);
 
@@ -1423,7 +1423,7 @@ export class RAGService {
 		// Prevent overlapping background updates
 		if (this.isProcessingFileUpdates) {
 			// Re-queue for later processing
-			setTimeout(() => {
+			window.setTimeout(() => {
 				this.queueFileUpdate(file, operation, oldPath);
 			}, 1000);
 			return;
@@ -1467,7 +1467,7 @@ export class RAGService {
 			}
 
 			// Yield control periodically during processing
-			await new Promise(resolve => setTimeout(resolve, 0));
+			await new Promise(resolve => window.setTimeout(resolve, 0));
 
 		} finally {
 			this.isProcessingFileUpdates = false;
@@ -1643,7 +1643,7 @@ export class RAGService {
 					this.progressCallback(0, 0, `Connection issue detected, retrying automatically (${humanAttemptNumber}/${autoRetryDelaysMs.length})...`);
 				}
 
-				await new Promise(resolve => setTimeout(resolve, autoRetryDelaysMs[attemptIdx]));
+				await new Promise(resolve => window.setTimeout(resolve, autoRetryDelaysMs[attemptIdx]));
 
 				const connectionTest = await this.testEmbeddingConnection();
 				// increment the global attempt counter so repeated calls won't re-run previous attempts
@@ -1744,7 +1744,7 @@ export class RAGService {
 
 				// Yield control periodically
 				if (i % 10 === 0) {
-					await new Promise(resolve => setTimeout(resolve, 0));
+					await new Promise(resolve => window.setTimeout(resolve, 0));
 				}
 			}
 
@@ -1801,7 +1801,7 @@ export class RAGService {
 
 						// Yield control to the UI thread every few files to keep Obsidian responsive
 						if (i % 3 === 0) {
-							await new Promise(resolve => setTimeout(resolve, 0));
+							await new Promise(resolve => window.setTimeout(resolve, 0));
 						}
 					}
 				}
@@ -1941,7 +1941,7 @@ export class RAGService {
 
 							// Yield control periodically
 							if (i % 3 === 0) {
-								await new Promise(resolve => setTimeout(resolve, 0));
+								await new Promise(resolve => window.setTimeout(resolve, 0));
 							}
 
 						} catch (error) {
@@ -2114,7 +2114,7 @@ export class RAGService {
 
 				// Yield control to the UI thread every few files to keep Obsidian responsive
 				if (i % 3 === 0) {
-					await new Promise(resolve => setTimeout(resolve, 0));
+					await new Promise(resolve => window.setTimeout(resolve, 0));
 				}
 			}
 
@@ -2214,7 +2214,7 @@ export class RAGService {
 
 							// Yield control periodically
 							if (i % 3 === 0) {
-								await new Promise(resolve => setTimeout(resolve, 0));
+								await new Promise(resolve => window.setTimeout(resolve, 0));
 							}
 
 						} catch (error) {
@@ -2316,7 +2316,7 @@ export class RAGService {
 
 				// Yield control to the UI thread every few files to keep Obsidian responsive
 				if (i % 3 === 0) {
-					await new Promise(resolve => setTimeout(resolve, 0));
+					await new Promise(resolve => window.setTimeout(resolve, 0));
 				}
 			}
 
@@ -2421,7 +2421,7 @@ export class RAGService {
 
 							// Yield control periodically
 							if (i % 3 === 0) {
-								await new Promise(resolve => setTimeout(resolve, 0));
+								await new Promise(resolve => window.setTimeout(resolve, 0));
 							}
 
 						} catch (error) {
@@ -2533,14 +2533,14 @@ export class RAGService {
 			}
 
 			// Yield control briefly before starting embedding generation
-			await new Promise(resolve => setTimeout(resolve, 0));
+			await new Promise(resolve => window.setTimeout(resolve, 0));
 
 			// Generate embeddings for all chunks
 			const texts = chunks.map(c => c.text);
 			const embeddings = await this.generateEmbeddings(texts);
 
 			// Yield control after embedding generation
-			await new Promise(resolve => setTimeout(resolve, 0));
+			await new Promise(resolve => window.setTimeout(resolve, 0));
 
 			// Create chunk documents
 			const chunkDocuments = chunks.map((chunk, index) => ({
@@ -2613,7 +2613,7 @@ export class RAGService {
 
 				// Yield control briefly before each embedding generation
 				if (i % 5 === 0) {
-					await new Promise(resolve => setTimeout(resolve, 0));
+					await new Promise(resolve => window.setTimeout(resolve, 0));
 				}
 
 				// Generate embedding for this chunk
@@ -2946,3 +2946,4 @@ export class RAGService {
 		};
 	}
 } 
+

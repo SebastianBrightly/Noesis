@@ -62,8 +62,8 @@ export class LoggingUtility {
 
 		try {
 			const result = LoggingUtility.fileLogger(line);
-			if (result && typeof (result as Promise<void>).then === 'function') {
-				(result as Promise<void>).catch(() => {
+			if (result instanceof Promise) {
+				result.catch(() => {
 					// Never throw from logger internals.
 				});
 			}

@@ -956,8 +956,8 @@ export class SearchService {
 				linked.set(path, Math.max(1, Number(count) || 1));
 			}
 
-			const backlinks = this.app.metadataCache.unresolvedLinks || {};
-			for (const [sourcePath, targets] of Object.entries(backlinks as Record<string, Record<string, number>>)) {
+			const backlinks: Record<string, Record<string, number>> = this.app.metadataCache.unresolvedLinks || {};
+			for (const [sourcePath, targets] of Object.entries(backlinks)) {
 				if (sourcePath === activeFile.path) {
 					continue;
 				}
@@ -1144,7 +1144,7 @@ export class SearchService {
 	private isLikelyDailyNote(file: TFile): boolean {
 		const dailyPathPattern = /(\/|^)daily\s*notes?\//i;
 		const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
-		const shortDatePattern = /^\d{4}[\/.]\d{2}[\/.]\d{2}$/;
+		const shortDatePattern = /^\d{4}[/.]\d{2}[/.]\d{2}$/;
 
 		return dailyPathPattern.test(file.path) || isoDatePattern.test(file.basename) || shortDatePattern.test(file.basename);
 	}

@@ -905,7 +905,7 @@ export class ChatView extends ItemView {
 				stylePrefix += 'Please be concise and provide a short answer. ';
 			}
 			// If a selected personality exists, prefer any matching stored personality prompt
-			const selected = settings.personalityName && (settings.personalityName as string).trim();
+			const selected = settings.personalityName && settings.personalityName.trim();
 			if (selected) {
 				const prompts = [PersonalityTrait[selected.toUpperCase() as keyof typeof PersonalityTrait] || ''];
 
@@ -1067,7 +1067,7 @@ export class ChatView extends ItemView {
 					break;
 				}
 
-				const contentEl = messageElement.querySelector('.local-llm-message-content') as HTMLElement | null;
+				const contentEl = messageElement.querySelector<HTMLElement>('.local-llm-message-content');
 				if (!contentEl) {
 					break;
 				}
@@ -1243,7 +1243,7 @@ export class ChatView extends ItemView {
 	}
 
 	private renderInlineCitations(contentEl: HTMLElement, message: ChatMessage): void {
-		const existing = contentEl.querySelector('.local-llm-inline-citations') as HTMLElement | null;
+		const existing = contentEl.querySelector<HTMLElement>('.local-llm-inline-citations');
 		if (existing) {
 			existing.remove();
 		}
@@ -1292,7 +1292,7 @@ export class ChatView extends ItemView {
 	}
 
 	private async renderAssistantResponse(contentEl: HTMLElement, message: ChatMessage): Promise<void> {
-		let responseEl = contentEl.querySelector('.local-llm-assistant-response') as HTMLElement | null;
+		let responseEl = contentEl.querySelector<HTMLElement>('.local-llm-assistant-response');
 		if (!responseEl) {
 			responseEl = contentEl.createEl('div', {
 				cls: 'local-llm-assistant-response'
@@ -1315,7 +1315,7 @@ export class ChatView extends ItemView {
 			});
 		}
 
-		const thinkingContainer = contentEl.querySelector('.local-llm-thinking-container') as HTMLElement | null;
+		const thinkingContainer = contentEl.querySelector<HTMLElement>('.local-llm-thinking-container');
 		if (thinkingContainer && responseEl.nextSibling !== thinkingContainer) {
 			contentEl.insertBefore(responseEl, thinkingContainer);
 		}
@@ -1341,42 +1341,42 @@ export class ChatView extends ItemView {
 	}
 
 	private getOrCreateThinkingPanelElements(contentEl: HTMLElement, messageId: string): ThinkingPanelElements {
-		let containerEl = contentEl.querySelector('.local-llm-thinking-container') as HTMLElement | null;
+		let containerEl = contentEl.querySelector<HTMLElement>('.local-llm-thinking-container');
 		if (!containerEl) {
 			containerEl = contentEl.createEl('div', {
 				cls: 'local-llm-thinking-container'
 			});
 		}
 
-		let summaryRow = containerEl.querySelector('.local-llm-thinking-summary') as HTMLElement | null;
+		let summaryRow = containerEl.querySelector<HTMLElement>('.local-llm-thinking-summary');
 		if (!summaryRow) {
 			summaryRow = containerEl.createEl('div', {
 				cls: 'local-llm-thinking-summary'
 			});
 		}
 
-		let statusEl = summaryRow.querySelector('.local-llm-thinking-status') as HTMLElement | null;
+		let statusEl = summaryRow.querySelector<HTMLElement>('.local-llm-thinking-status');
 		if (!statusEl) {
 			statusEl = summaryRow.createEl('span', {
 				cls: 'local-llm-thinking-status'
 			});
 		}
 
-		let summaryControls = summaryRow.querySelector('.local-llm-thinking-controls') as HTMLElement | null;
+		let summaryControls = summaryRow.querySelector<HTMLElement>('.local-llm-thinking-controls');
 		if (!summaryControls) {
 			summaryControls = summaryRow.createEl('div', {
 				cls: 'local-llm-thinking-controls'
 			});
 		}
 
-		let metaEl = summaryControls.querySelector('.local-llm-thinking-meta') as HTMLElement | null;
+		let metaEl = summaryControls.querySelector<HTMLElement>('.local-llm-thinking-meta');
 		if (!metaEl) {
 			metaEl = summaryControls.createEl('span', {
 				cls: 'local-llm-thinking-meta'
 			});
 		}
 
-		let toggleButton = summaryControls.querySelector('.local-llm-thinking-toggle') as HTMLButtonElement | null;
+		let toggleButton = summaryControls.querySelector<HTMLButtonElement>('.local-llm-thinking-toggle');
 		if (!toggleButton) {
 			toggleButton = summaryControls.createEl('button', {
 				cls: 'local-llm-thinking-toggle',
@@ -1384,7 +1384,7 @@ export class ChatView extends ItemView {
 			});
 		}
 
-		let previewEl = containerEl.querySelector('.local-llm-thinking-preview-markdown') as HTMLElement | null;
+		let previewEl = containerEl.querySelector<HTMLElement>('.local-llm-thinking-preview-markdown');
 		if (!previewEl) {
 			previewEl = containerEl.createEl('div', {
 				cls: 'local-llm-thinking-preview-markdown'
@@ -1439,8 +1439,8 @@ export class ChatView extends ItemView {
 		const state = this.getOrCreateThinkingViewState(message);
 		state.expanded = !state.expanded;
 
-		const messageElement = this.messageContainer.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement | null;
-		const contentEl = messageElement?.querySelector('.local-llm-message-content') as HTMLElement | null;
+		const messageElement = this.messageContainer.querySelector<HTMLElement>(`[data-message-id="${messageId}"]`);
+		const contentEl = messageElement?.querySelector<HTMLElement>('.local-llm-message-content');
 		if (!contentEl) {
 			return;
 		}
@@ -1458,7 +1458,7 @@ export class ChatView extends ItemView {
 		const streamState = this.streamingThinkingState.get(message.id);
 		const isThinkingActive = !!message.isStreaming && !!streamState?.inThinkBlock;
 		if (blocks.length === 0 && !isThinkingActive) {
-			const existingContainer = contentEl.querySelector('.local-llm-thinking-container') as HTMLElement | null;
+			const existingContainer = contentEl.querySelector<HTMLElement>('.local-llm-thinking-container');
 			if (existingContainer) {
 				existingContainer.remove();
 			}
@@ -1645,7 +1645,7 @@ export class ChatView extends ItemView {
 				setIcon(copyButton, 'check');
 				copyButton.classList.add('copied');
 
-				setTimeout(() => {
+				window.setTimeout(() => {
 					setIcon(copyButton, 'copy');
 					copyButton.classList.remove('copied');
 				}, 1000);
@@ -2048,8 +2048,8 @@ Once your server is running, click the test connection button below.`;
 		this.ragStatusArea.removeClass('local-llm-rag-status-hidden');
 		this.ragStatusArea.addClass('local-llm-rag-status-visible');
 
-		const retryButton = this.ragStatusContent.querySelector('.local-llm-rag-retry-button') as HTMLButtonElement | null;
-		const cancelButton = this.ragStatusContent.querySelector('.local-llm-rag-cancel-button') as HTMLButtonElement | null;
+		const retryButton = this.ragStatusContent.querySelector<HTMLButtonElement>('.local-llm-rag-retry-button');
+		const cancelButton = this.ragStatusContent.querySelector<HTMLButtonElement>('.local-llm-rag-cancel-button');
 
 		if (isPaused) {
 			retryButton?.addEventListener('click', () => {
@@ -2112,7 +2112,7 @@ Once your server is running, click the test connection button below.`;
 	 */
 	onRAGIndexingComplete(): void {
 		// Update stats display after a brief delay
-		setTimeout(() => {
+		window.setTimeout(() => {
 			this.updateRAGStatus();
 		}, 1000);
 	}

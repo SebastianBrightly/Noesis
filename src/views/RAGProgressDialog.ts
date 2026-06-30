@@ -211,6 +211,7 @@ export class RAGProgressDialog {
 	 */
 	complete(message?: string) {
 		if (!this.isVisible) return;
+		const activeWindow = this.getActiveDocument().defaultView ?? window;
 		
 		this.isComplete = true;
 		this.progressBar.setValue(100);
@@ -222,7 +223,7 @@ export class RAGProgressDialog {
 		this.closeButton.classList.add('rag-progress-button-inline');
 		
 		// Auto-close after 5 seconds
-		setTimeout(() => {
+		activeWindow.setTimeout(() => {
 			if (this.isVisible) {
 				this.close();
 			}

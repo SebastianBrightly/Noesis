@@ -389,11 +389,11 @@ export class EmbeddingService {
 
 	private async sendEmbeddingRequest(request: EmbeddingRequest): Promise<EmbeddingResponse> {
 		const started = Date.now();
-		let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+		let timeoutHandle: number | undefined;
 		try {
 			const timeoutMs = this.getRequestTimeoutMs();
 			const timeoutPromise = new Promise<never>((_, reject) => {
-				timeoutHandle = setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs);
+				timeoutHandle = window.setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs);
 			});
 
 			const response = await Promise.race([
