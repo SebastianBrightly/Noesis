@@ -262,8 +262,8 @@ export class SettingsPage extends PluginSettingTab
 	}
 
 	private refreshAutoTagTabPanel(): void {
-		const tabButtons = Array.from(this.containerEl.querySelectorAll('.local-llm-tab')) as HTMLElement[];
-		const tabPanels = Array.from(this.containerEl.querySelectorAll('.local-llm-panel')) as HTMLElement[];
+		const tabButtons = Array.from(this.containerEl.querySelectorAll<HTMLElement>('.local-llm-tab'));
+		const tabPanels = Array.from(this.containerEl.querySelectorAll<HTMLElement>('.local-llm-panel'));
 
 		const autoTagIndex = tabButtons.findIndex((button) => button.textContent?.trim() === 'Auto Tag');
 		if (autoTagIndex < 0 || autoTagIndex >= tabPanels.length) {
@@ -714,7 +714,7 @@ export class SettingsPage extends PluginSettingTab
 				this.plugin.settings.multiAIConnections = [];
 			}
 
-			return this.plugin.settings.multiAIConnections as AIConnectionConfig[];
+			return this.plugin.settings.multiAIConnections;
 		};
 
 		const createNewConnection = (): AIConnectionConfig => ({

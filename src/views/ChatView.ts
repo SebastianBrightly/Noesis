@@ -310,7 +310,7 @@ export class ChatView extends ItemView {
 		});
 
 		const PersonalityDropdown = new DropdownComponent(PersonalityContainer);
-		this.personalityDropdown = PersonalityDropdown as DropdownComponentWithPrivateAPI;
+		this.personalityDropdown = PersonalityDropdown;
 		// Coerce stored names to array or fall back to defaults
 		let names: string[] = [];
 		const rawNames = Object.keys(PersonalityMode);
@@ -377,7 +377,7 @@ export class ChatView extends ItemView {
 		});
 
 		const connectionDropdown = new DropdownComponent(this.connectionContainer);
-		this.connectionDropdown = connectionDropdown as DropdownComponentWithPrivateAPI;
+		this.connectionDropdown = connectionDropdown;
 		connectionDropdown.onChange(voidAsync(async (value) => {
 			this.plugin.settings.activeAIConnectionId = value === '' ? undefined : value;
 			await this.plugin.saveSettings();
@@ -1415,7 +1415,7 @@ export class ChatView extends ItemView {
 				}
 
 				const state = this.getOrCreateThinkingViewState(message);
-				state.stickToBottom = this.isThinkingPreviewNearBottom(previewEl as HTMLElement);
+				state.stickToBottom = this.isThinkingPreviewNearBottom(previewEl);
 			});
 		}
 

@@ -95,7 +95,7 @@ export class EditorNativeActionsService {
 
 	register(): void {
 		const workspaceEvents = this.plugin.app.workspace as unknown as {
-			on: (eventName: string, callback: (...args: any[]) => void) => EventRef;
+			on: (eventName: string, callback: (...args: unknown[]) => void) => EventRef;
 		};
 
 		for (const action of ACTIONS) {

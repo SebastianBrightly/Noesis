@@ -960,8 +960,8 @@ export class SearchService {
 			}
 
 			const linked = new Map<string, number>();
-			const links = (this.app.metadataCache.resolvedLinks?.[activeFile.path] || {}) as Record<string, number>;
-			for (const path in links) {
+			const links = this.app.metadataCache.resolvedLinks?.[activeFile.path] || {};
+						for (const path in links) {
 				if (!Object.prototype.hasOwnProperty.call(links, path)) {
 					continue;
 				}

@@ -1382,7 +1382,7 @@ export class RAGService {
 
 		// Clear existing timeout for this file if it exists
 		if (this.fileUpdateQueue.has(filePath)) {
-			window.clearTimeout(this.fileUpdateQueue.get(filePath)!);
+			window.clearTimeout(this.fileUpdateQueue.get(filePath));
 		}
 
 		// Set new timeout to process the file update after a brief delay
