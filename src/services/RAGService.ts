@@ -87,7 +87,7 @@ export class RAGService {
 	private fileUpdateQueue: Map<string, number> = new Map();
 	private isProcessingFileUpdates: boolean = false;
 	private pendingActiveFileUpdates: Set<string> = new Set();
-	private activeFileCheckInterval?: ReturnType<typeof window.setInterval>;
+	private activeFileCheckInterval?: ReturnType<typeof window.setInterval> | number;
 	private lastActiveFilePath: string | null = null;
 	private settings: LocalLLMSettings;
 	private imageProcessingEnabled: boolean = false;
