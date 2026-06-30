@@ -1,5 +1,6 @@
 import { LoggingUtility } from '../utils/LoggingUtility';
 import { requestUrl } from 'obsidian';
+import {toSafeLogValue} from '../utils/errorUtils';
 
 interface EmbeddingRequest {
 	input: string | string[];
@@ -441,7 +442,7 @@ export class EmbeddingService {
 			const msg = this.getErrorMessage(error);
 			throw new Error(`Embedding request error (${this.getRequestTimeoutMs()}ms timeout): ${msg}`);
 		} finally {
-			if (timeoutHandle) clearTimeout(timeoutHandle);
+			if (timeoutHandle) window.clearTimeout(timeoutHandle);
 		}
 	}
 
@@ -530,7 +531,7 @@ export class EmbeddingService {
 			const maxBatchTokens = this.getMaxTokensPerRequest();
 			if (total === 0) return [];
 
-			const allEmbeddings: Array<number[] | null> = new Array(total).fill(null);
+			const allEmbeddings: Array<number[] | null> = new Array<number[] | null>(total).fill(null);
 			const safeBatchTexts: string[] = [];
 			const safeBatchIndices: number[] = [];
 

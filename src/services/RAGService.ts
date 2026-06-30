@@ -1,4 +1,4 @@
-import { App, TFile, EventRef, Events, Notice, ProgressBarComponent, Plugin, PluginManifest } from 'obsidian';
+import { App, TFile, EventRef, Events, Notice, ProgressBarComponent, Plugin, PluginManifest, WorkspaceLeaf } from 'obsidian';
 import { UnifiedVectorDatabase, VectorSearchResult, VectorDocument } from '../db/UnifiedVectorDatabase';
 import { LoggingUtility } from '../utils/LoggingUtility';
 import { SearchResult } from './SearchService';
@@ -1260,7 +1260,7 @@ export class RAGService {
 	/**
 	 * Handle when the active leaf changes (user switches notes)
 	 */
-	private handleActiveLeafChange(leaf: any): void {
+	private handleActiveLeafChange(leaf: WorkspaceLeaf | null): void {
 		try {
 			// Get the file that was previously active
 			const previousActiveFile = this.lastActiveFilePath;
@@ -1359,7 +1359,7 @@ export class RAGService {
 
 		// Clear any pending file update timers
 		for (const timeout of this.fileUpdateQueue.values()) {
-			clearTimeout(timeout);
+			window.clearTimeout(timeout);
 		}
 		this.fileUpdateQueue.clear();
 
@@ -1382,7 +1382,7 @@ export class RAGService {
 
 		// Clear existing timeout for this file if it exists
 		if (this.fileUpdateQueue.has(filePath)) {
-			clearTimeout(this.fileUpdateQueue.get(filePath)!);
+			window.clearTimeout(this.fileUpdateQueue.get(filePath)!);
 		}
 
 		// Set new timeout to process the file update after a brief delay
@@ -2033,7 +2033,7 @@ export class RAGService {
 
 		// 3. Clear any pending timeouts
 		for (const timeout of this.fileUpdateQueue.values()) {
-			clearTimeout(timeout);
+			window.clearTimeout(timeout);
 		}
 		this.fileUpdateQueue.clear();
 

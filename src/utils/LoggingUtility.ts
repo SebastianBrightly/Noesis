@@ -20,7 +20,7 @@ export class LoggingUtility {
 		LoggingUtility.developerLoggingEnabled = enabled;
 	}
 
-	static log(...args: any[]) {
+	static log(...args: unknown[]) {
 		// If plugin is not initialized, default to logging (for early initialization/unload)
 		// Or if settings are not yet loaded, or if developer logging is enabled
 		if (LoggingUtility.isDeveloperLoggingEnabled()) {
@@ -29,7 +29,7 @@ export class LoggingUtility {
 		}
 	}
 
-	static warn(...args: any[]) {
+	static warn(...args: unknown[]) {
 		// If plugin is not initialized, default to logging (for early initialization/unload)
 		// Or if settings are not yet loaded, or if developer logging is enabled
 		if (LoggingUtility.isDeveloperLoggingEnabled()) {
@@ -38,7 +38,7 @@ export class LoggingUtility {
 		}
 	}
 
-	static error(...args: any[]) {
+	static error(...args: unknown[]) {
 		// Always log errors regardless of developer logging setting or plugin initialization
 		console.error(...args);
 		LoggingUtility.writeToFile('ERROR', args);
@@ -52,7 +52,7 @@ export class LoggingUtility {
 		return LoggingUtility.developerLoggingEnabled;
 	}
 
-	private static writeToFile(level: 'INFO' | 'WARN' | 'ERROR', args: any[]) {
+	private static writeToFile(level: 'INFO' | 'WARN' | 'ERROR', args: unknown[]) {
 		if (!LoggingUtility.fileLoggingEnabled || !LoggingUtility.fileLogger) {
 			return;
 		}
@@ -72,7 +72,7 @@ export class LoggingUtility {
 		}
 	}
 
-	private static serializeArg(arg: any): string {
+	private static serializeArg(arg: unknown): string {
 		if (arg instanceof Error) {
 			return arg.stack ?? `${arg.name}: ${arg.message}`;
 		}

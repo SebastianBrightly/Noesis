@@ -13,6 +13,7 @@ import { EditorNativeActionsService } from './services/EditorNativeActionsServic
 import { AutoTagService } from './services/AutoTagService';
 import { DEFAULT_RESPONSE_NOTE_TEMPLATE } from './utils/TemplateVariableRenderer';
 import type { LLMService } from './services/LLMService';
+import { toSafeLogValue } from './utils/errorUtils';
 
 
 
@@ -436,13 +437,13 @@ export default class LocalLLMPlugin extends Plugin {
 				filename: event.filename,
 				line: event.lineno,
 				column: event.colno,
-				error: event.error
+				error: toSafeLogValue(event.error)
 			});
 		});
 
 		this.registerDomEvent(window, 'unhandledrejection', (event: PromiseRejectionEvent) => {
 			LoggingUtility.error('Unhandled promise rejection captured', {
-				reason: event.reason
+				reason: toSafeLogValue(event.reason)
 			});
 		});
 
