@@ -1311,7 +1311,7 @@ export class RAGService {
 		// Check every 30 seconds for files that need processing (reduced frequency since we have immediate processing)
 		this.activeFileCheckInterval = setInterval(() => {
 			if (this.pendingActiveFileUpdates.size > 0) {
-				this.processPendingActiveFiles();
+				void this.processPendingActiveFiles();
 			}
 		}, 30000); // 30 second interval (was 10 seconds)
 	}
