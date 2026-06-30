@@ -119,7 +119,7 @@ export class RAGService {
 		this.app = app;
 
 		// Keep the DB path vault-relative so we can use adapter APIs without direct Node fs access.
-		const configDir = this.app.vault.configDir.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '') || '.obsidian';
+		const configDir = this.app.vault.configDir.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
 		const pluginFolderName = manifest.id;
 		const dbPath = `${configDir}/plugins/${pluginFolderName}/vector-index/embeddings.db`;
 		const adapterWithBasePath = this.app.vault.adapter as { getBasePath?: () => string };
@@ -523,7 +523,7 @@ export class RAGService {
 
 					if (this.initOptions.backgroundIndexing) {
 						// Run in background without blocking initialization
-						this.runBackgroundMaintenance(MaintenanceOperation.REBUILD);
+						void this.runBackgroundMaintenance(MaintenanceOperation.REBUILD);
 					} else {
 						// Run synchronously
 						await this.forceRebuildIndex(this.createAutoMaintenanceProgressCallback());
@@ -533,7 +533,7 @@ export class RAGService {
 
 					if (this.initOptions.backgroundIndexing) {
 						// Run in background without blocking initialization
-						this.runBackgroundMaintenance(MaintenanceOperation.UPDATE);
+						void this.runBackgroundMaintenance(MaintenanceOperation.UPDATE);
 					} else {
 						// Run synchronously
 						await this.buildIndex(this.createAutoMaintenanceProgressCallback());

@@ -444,16 +444,16 @@ export class ChatView extends ItemView {
 		this.inputElement.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
-				this.sendMessage();
+				void this.sendMessage();
 			}
 		});
 
 		this.sendButton.addEventListener('click', () => {
-			this.sendMessage();
+			void this.sendMessage();
 		});
 
 		this.stopButton.addEventListener('click', () => {
-			this.stopStreaming();
+			void this.stopStreaming();
 		});
 
 		// Add initial welcome message
@@ -476,7 +476,7 @@ export class ChatView extends ItemView {
 		}));
 
 		if (typeof this.plugin.consumePendingReviewPrompt === 'function') {
-			this.plugin.consumePendingReviewPrompt(this);
+			void this.plugin.consumePendingReviewPrompt(this);
 		}
 	}
 
@@ -971,7 +971,7 @@ export class ChatView extends ItemView {
 				const streamingMessage = this.messages.find(m => m.isStreaming);
 				if (streamingMessage) {
 					streamingMessage.isStreaming = false;
-					this.finalizeStreamingMessage(streamingMessage.id);
+					void this.finalizeStreamingMessage(streamingMessage.id);
 				}
 			} else {
 				// Handle actual errors
@@ -1281,7 +1281,7 @@ export class ChatView extends ItemView {
 			});
 			linkEl.addEventListener('click', (event) => {
 				event.preventDefault();
-				this.app.workspace.openLinkText(linkTarget, '', true);
+				void this.app.workspace.openLinkText(linkTarget, '', true);
 			});
 
 			itemEl.createEl('span', {
@@ -1543,7 +1543,7 @@ export class ChatView extends ItemView {
 			if (messageElement) {
 				messageElement.remove();
 			}
-			this.renderMessage(message);
+			void this.renderMessage(message);
 		}
 		LoggingUtility.error('Error calling local LLM:', error);
 	}
@@ -1732,7 +1732,7 @@ export class ChatView extends ItemView {
 				noteEl.addClass('local-llm-note-clickable');
 				noteEl.addEventListener('click', () => {
 					const jumpTarget = note.anchorTarget ? `${note.path}${note.anchorTarget}` : note.path;
-					this.app.workspace.openLinkText(jumpTarget, '', true);
+					void this.app.workspace.openLinkText(jumpTarget, '', true);
 				});
 
 				if (this.plugin.settings.enableDeveloperLogging && note.graphDebug) {
@@ -1809,14 +1809,14 @@ export class ChatView extends ItemView {
 		if (streamingMessage) {
 			streamingMessage.isStreaming = false;
 			// Re-render the message to remove the streaming cursor and apply markdown
-			this.finalizeStreamingMessage(streamingMessage.id);
+			void this.finalizeStreamingMessage(streamingMessage.id);
 		}
 	}
 
 	private async startNewChat() {
 		// Stop any ongoing streaming
 		if (this.isStreaming) {
-			this.stopStreaming();
+			void this.stopStreaming();
 		}
 
 		// Clear all messages

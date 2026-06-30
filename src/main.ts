@@ -304,7 +304,7 @@ export default class LocalLLMPlugin extends Plugin {
 
 		// Add ribbon icon to open chat
 		this.addRibbonIcon('sparkles', 'Open Noesis', () => {
-			this.activateView();
+			void this.activateView();
 		});
 
 		// Add command to open chat
@@ -312,7 +312,7 @@ export default class LocalLLMPlugin extends Plugin {
 			id: 'open-local-llm-chat',
 			name: 'Open',
 			callback: () => {
-				this.activateView();
+				void this.activateView();
 			}
 		});
 
@@ -367,17 +367,25 @@ export default class LocalLLMPlugin extends Plugin {
 
 	}
 
-	async onunload() {
+	onunload() {
 		LoggingUtility.log('Unloading Noesis Chat plugin');
 
-		await this.flushUsageTracking();
+		void this.performUnloadCleanup().catch((error: unknown) => {
+			LoggingUtility.error('Error during plugin unload cleanup:', error);
+		});
+	}
 
-		// Stop RAG file watcher and close database gracefully
-		if (this.ragService) {
-			await this.ragService.shutdown();
+	private async performUnloadCleanup(): Promise<void> {
+		try {
+			await this.flushUsageTracking();
+
+			// Stop RAG file watcher and close database gracefully
+			if (this.ragService) {
+				await this.ragService.shutdown();
+			}
+		} finally {
+			LoggingUtility.setFileLogger(null);
 		}
-
-		LoggingUtility.setFileLogger(null);
 	}
 
 	private sanitizeVaultPath(pathValue: string): string {
@@ -402,7 +410,7 @@ export default class LocalLLMPlugin extends Plugin {
 
 	private async setupPersistentLogging() {
 		try {
-			const configDir = this.sanitizeVaultPath(this.app.vault.configDir || '.obsidian');
+			const configDir = this.sanitizeVaultPath(this.app.vault.configDir);
 			const logDir = `${configDir}/plugins/${this.manifest.id}/logs`;
 			const logPath = `${logDir}/noesis.log.txt`;
 			await this.ensureFolder(logDir);
@@ -846,7 +854,7 @@ export default class LocalLLMPlugin extends Plugin {
 
 		// Reveal the leaf in case it is in a collapsed sidebar
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 		}
 	}
 }

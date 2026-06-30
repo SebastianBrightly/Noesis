@@ -679,7 +679,7 @@ export class SettingsPage extends PluginSettingTab
 		// Load models automatically when settings are displayed
 		// Use setTimeout to ensure the dropdown is fully initialized first
 		setTimeout(() => {
-			this.loadAvailableModels();
+			void this.loadAvailableModels();
 		}, 0);
 		//**************************** */
 		addStyledSlider(
@@ -1400,7 +1400,7 @@ export class SettingsPage extends PluginSettingTab
 				.onChange(async (value) => {
 					this.plugin.settings.embeddingEndpoint = value;
 					await this.plugin.saveSettings();
-					this.loadAvailableEmbeddingModels();
+					void this.loadAvailableEmbeddingModels();
 				}));
 		//**************************** */
 		// Embedding model dropdown setting
@@ -1428,7 +1428,7 @@ export class SettingsPage extends PluginSettingTab
 			}));
 
 		setTimeout(() => {
-			this.loadAvailableEmbeddingModels();
+			void this.loadAvailableEmbeddingModels();
 		}, 0);
 
 		// Embedding chunking settings
