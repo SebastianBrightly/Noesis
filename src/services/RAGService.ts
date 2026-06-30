@@ -87,7 +87,7 @@ export class RAGService {
 	private fileUpdateQueue: Map<string, number> = new Map();
 	private isProcessingFileUpdates: boolean = false;
 	private pendingActiveFileUpdates: Set<string> = new Set();
-	private activeFileCheckInterval?: NodeJS.Timeout;
+	private activeFileCheckInterval?: ReturnType<typeof window.setInterval>;
 	private lastActiveFilePath: string | null = null;
 	private settings: LocalLLMSettings;
 	private imageProcessingEnabled: boolean = false;
@@ -1309,7 +1309,7 @@ export class RAGService {
 	 */
 	private startActiveFileMonitoring(): void {
 		// Check every 30 seconds for files that need processing (reduced frequency since we have immediate processing)
-		this.activeFileCheckInterval = setInterval(() => {
+		this.activeFileCheckInterval = window.setInterval(() => {
 			if (this.pendingActiveFileUpdates.size > 0) {
 				void this.processPendingActiveFiles();
 			}
@@ -1365,7 +1365,7 @@ export class RAGService {
 
 		// Clear active file monitoring
 		if (this.activeFileCheckInterval) {
-			clearInterval(this.activeFileCheckInterval);
+			window.clearInterval(this.activeFileCheckInterval);
 			this.activeFileCheckInterval = undefined;
 		}
 		this.pendingActiveFileUpdates.clear();
@@ -2038,7 +2038,7 @@ export class RAGService {
 		this.fileUpdateQueue.clear();
 
 		if (this.activeFileCheckInterval) {
-			clearInterval(this.activeFileCheckInterval);
+			window.clearInterval(this.activeFileCheckInterval);
 			this.activeFileCheckInterval = undefined;
 		}
 

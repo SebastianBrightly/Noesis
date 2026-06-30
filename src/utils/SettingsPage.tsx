@@ -1007,9 +1007,9 @@ export class SettingsPage extends PluginSettingTab
 				// keep a reference for programmatic updates
 				this.personalityDropdown = dropdown;
 				dropdown.setValue(current);
-				dropdown.onChange(async (value) => {
+				dropdown.onChange(voidAsync(async (value) => {
 					await this.handlePersonalityChange(value, containerEl);
-				});
+				}, (error) => LoggingUtility.error('Failed to handle personality change:', error)));
 
 
 

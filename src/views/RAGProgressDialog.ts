@@ -223,7 +223,7 @@ export class RAGProgressDialog {
 		this.closeButton.classList.add('rag-progress-button-inline');
 		
 		// Auto-close after 5 seconds
-		activeWindow.setTimeout(() => {
+		window.setTimeout(() => {
 			if (this.isVisible) {
 				this.close();
 			}

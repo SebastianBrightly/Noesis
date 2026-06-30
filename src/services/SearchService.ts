@@ -370,12 +370,21 @@ export class SearchService {
 			adjacency.get(to)!.add(from);
 		};
 
-		for (const [sourcePath, targets] of Object.entries(resolvedLinks)) {
+		for (const sourcePath in resolvedLinks) {
+			if (!Object.prototype.hasOwnProperty.call(resolvedLinks, sourcePath)) {
+				continue;
+			}
+
+			const targets = resolvedLinks[sourcePath];
 			const sourceFile = this.app.vault.getAbstractFileByPath(sourcePath);
 			if (!(sourceFile instanceof TFile) || sourceFile.extension !== 'md') {
 				continue;
 			}
-			for (const targetPath of Object.keys(targets || {})) {
+			for (const targetPath in targets) {
+				if (!Object.prototype.hasOwnProperty.call(targets, targetPath)) {
+					continue;
+				}
+
 				const targetFile = this.app.vault.getAbstractFileByPath(targetPath);
 				if (!(targetFile instanceof TFile) || targetFile.extension !== 'md') {
 					continue;
@@ -559,7 +568,7 @@ export class SearchService {
 			clipped = clipped.slice(0, lastBoundary);
 		}
 
-		return clipped.trimEnd() + '...';
+		return clipped.replace(/\s+$/, '') + '...';
 	}
 
 	private packResultsToTokenBudget(results: SearchResult[], maxTokens: number, maxResults: number): SearchResult[] {
@@ -951,17 +960,37 @@ export class SearchService {
 			}
 
 			const linked = new Map<string, number>();
-			const links = this.app.metadataCache.resolvedLinks?.[activeFile.path] || {};
-			for (const [path, count] of Object.entries(links)) {
-				linked.set(path, Math.max(1, Number(count) || 1));
+			const links = (this.app.metadataCache.resolvedLinks?.[activeFile.path] || {}) as Record<string, number>;
+			for (const path in links) {
+				if (!Object.prototype.hasOwnProperty.call(links, path)) {
+					continue;
+				}
+
+				const count = links[path];
+				const normalizedCount = typeof count === 'number' && Number.isFinite(count) ? count : 1;
+				linked.set(path, Math.max(1, normalizedCount));
 			}
 
 			const backlinks: Record<string, Record<string, number>> = this.app.metadataCache.unresolvedLinks || {};
-			for (const [sourcePath, targets] of Object.entries(backlinks)) {
+			for (const sourcePath in backlinks) {
+				if (!Object.prototype.hasOwnProperty.call(backlinks, sourcePath)) {
+					continue;
+				}
+
+				const targets = backlinks[sourcePath];
 				if (sourcePath === activeFile.path) {
 					continue;
 				}
-				if (targets && Object.keys(targets).some(target => target === activeFile.path || target.endsWith('/' + activeFile.path))) {
+
+				let hasBacklinkToActive = false;
+				for (const target of Object.keys(targets)) {
+					if (target === activeFile.path || target.endsWith('/' + activeFile.path)) {
+						hasBacklinkToActive = true;
+						break;
+					}
+				}
+
+				if (hasBacklinkToActive) {
 					linked.set(sourcePath, Math.max(linked.get(sourcePath) || 0, 1));
 				}
 			}

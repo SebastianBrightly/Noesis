@@ -322,9 +322,13 @@ export class ChatView extends ItemView {
 		// Add Auto option
 		PersonalityDropdown.addOption('', 'Auto');
 		if (names.length > 0) {
-			names.forEach(n => PersonalityDropdown.addOption(n, n));
+			names.forEach((n) => {
+				PersonalityDropdown.addOption(n, n);
+			});
 		} else {
-			( ['Friendly', 'Formal', 'Casual', 'Professional', 'Sarcastic', 'Custom']).forEach(n => PersonalityDropdown.addOption(n, n));
+			(['Friendly', 'Formal', 'Casual', 'Professional', 'Sarcastic', 'Custom']).forEach((n) => {
+				PersonalityDropdown.addOption(n, n);
+			});
 		}
 
 		const currentpersonality = this.plugin.settings.personalityName || '';
@@ -610,7 +614,9 @@ export class ChatView extends ItemView {
 			? Object.keys(PersonalityMode)
 			: ['Friendly', 'Formal', 'Casual', 'Professional', 'Sarcastic', 'Custom'];
 
-		names.forEach(n => dd.addOption(n, n));
+		names.forEach((n) => {
+			dd.addOption(n, n);
+		});
 
 		// Restore selected value
 		try {
@@ -960,7 +966,7 @@ export class ChatView extends ItemView {
 
 		} catch (error) {
 			// Handle error
-			if ((error as any).name === 'AbortError') {
+			if (error instanceof Error && error.name === 'AbortError') {
 				// User cancelled - don't change the message content
 				this.isStreaming = false;
 				this.setSendButtonEnabled(true);
@@ -1855,7 +1861,11 @@ export class ChatView extends ItemView {
         // Copy to clipboard
         navigator.clipboard.writeText(conversationText).then(() => {
             new Notice('✅ Conversation copied to clipboard!', 2000);
-        });
+        }) .catch((err) => {
+			new Notice('❌ Failed to copy conversation: ' + err, 3000);
+		})
+
+		;
 	}
 
 	private getConversationText(): string {
