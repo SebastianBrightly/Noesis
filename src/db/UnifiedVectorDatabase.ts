@@ -181,7 +181,7 @@ export class UnifiedVectorDatabase {
 			const initSqlJsTyped = initSqlJs as unknown as InitSqlJs;
 			const SQL = await initSqlJsTyped({
 				wasmBinary: sqlWasm
-			}) as unknown as SqliteModule;
+			});
 
 			// Load database if it exists, otherwise create new
 			let dbFile;

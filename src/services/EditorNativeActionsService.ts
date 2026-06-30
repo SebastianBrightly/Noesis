@@ -95,7 +95,7 @@ export class EditorNativeActionsService {
 
 	register(): void {
 		const workspaceEvents = this.plugin.app.workspace as unknown as {
-			on: (eventName: string, callback: (...args: unknown[]) => void) => EventRef;
+			on: (eventName: string, callback: (...args: any[]) => void) => EventRef;
 		};
 
 		for (const action of ACTIONS) {
@@ -165,8 +165,8 @@ export class EditorNativeActionsService {
 
 		const filePath = view?.file?.path ?? 'unknown-file';
 		const cursor = editor.getCursor('to');
-		const selectionFrom = editor.getCursor('from') as EditorPosition;
-		const selectionTo = editor.getCursor('to') as EditorPosition;
+		const selectionFrom = editor.getCursor('from');
+		const selectionTo = editor.getCursor('to');
 		LoggingUtility.log('Editor action started', {
 			action: action.id,
 			source,
@@ -313,7 +313,7 @@ export class EditorNativeActionsService {
 			source_file: sourceFile,
 			source_block_id: blockId,
 			source_excerpt: selection
-		}).trimEnd() + '\n';
+		}).replace(/\s+$/, '') + '\n';
 
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 		const baseName = `Noesis ${action.id} ${timestamp}.md`;
@@ -439,7 +439,7 @@ export class EditorNativeActionsService {
 			}
 		}
 
-		const highlighted = hostEl.querySelector('.cm-selectionBackground, .cm-selectionLayer .cm-selectionBackground') as HTMLElement | null;
+		const highlighted = hostEl.querySelector<HTMLElement>('.cm-selectionBackground, .cm-selectionLayer .cm-selectionBackground');
 		if (highlighted) {
 			const cmRect = highlighted.getBoundingClientRect();
 			if (cmRect.width > 0 && cmRect.height > 0) {

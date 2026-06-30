@@ -557,8 +557,9 @@ export class ChatView extends ItemView {
 	private applyActiveConnectionContextModeToUI(): void {
 		const dropdown = this.containerEl.querySelector('.local-llm-context-mode-container select') as HTMLSelectElement;
 		this.contextMode = this.getEffectiveContextMode();
-		if (dropdown && dropdown.value !== this.contextMode) {
-			dropdown.value = this.contextMode;
+		const contextModeValue = String(this.contextMode);
+		if (dropdown && dropdown.value !== contextModeValue) {
+			dropdown.value = contextModeValue;
 		}
 	}
 

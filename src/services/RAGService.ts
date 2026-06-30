@@ -887,12 +887,24 @@ export class RAGService {
 		return [];
 	}
 
-	private appendRetrievalMetadataSignals(content: string, metadata: any): string {
-		if (!metadata?.frontmatter) {
-			return content;
+	private getFrontmatterRecord(metadata: unknown): Record<string, unknown> | null {
+		if (!metadata || typeof metadata !== 'object') {
+			return null;
 		}
 
-		const frontmatter = metadata.frontmatter as Record<string, unknown>;
+		const maybeFrontmatter = (metadata as { frontmatter?: unknown }).frontmatter;
+		if (!maybeFrontmatter || typeof maybeFrontmatter !== 'object') {
+			return null;
+		}
+
+		return maybeFrontmatter as Record<string, unknown>;
+	}
+
+	private appendRetrievalMetadataSignals(content: string, metadata: unknown): string {
+		const frontmatter = this.getFrontmatterRecord(metadata);
+		if (!frontmatter) {
+			return content;
+		}
 		const lines: string[] = [];
 
 		const tags = this.toNormalizedStringList(frontmatter.tags);

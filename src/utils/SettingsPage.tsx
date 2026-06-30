@@ -255,7 +255,7 @@ export class SettingsPage extends PluginSettingTab
 			return;
 		}
 
-		const desiredMode = this.plugin.settings.contextMode;
+		const desiredMode = String(this.plugin.settings.contextMode);
 		if (this.contextModeDropdown.selectEl.value !== desiredMode) {
 			this.contextModeDropdown.setValue(desiredMode);
 		}
@@ -304,8 +304,6 @@ export class SettingsPage extends PluginSettingTab
 			errorNotice?: string;
 		}
 	): Promise<void> {
-		if (!dropdown) return;
-
 		try {
 			// Show loading state
 			const savedModel = config.savedModel || '';

@@ -500,14 +500,14 @@ export class AutoTagService {
 			return undefined;
 		}
 
-		const connections = (this.plugin.settings.multiAIConnections || []) as AIConnectionConfig[];
+		const connections = this.plugin.settings.multiAIConnections || [];
 		return connections.find((connection) => connection.id === selectedId && !connection.isSleeping);
 	}
 
 	private buildAutoTagLLMService(): LLMService {
 		const connection = this.getAutoTagConnectionConfig();
 		if (!connection) {
-			return this.plugin.llmService as LLMService;
+			return this.plugin.llmService;
 		}
 
 		return createLLMService({
