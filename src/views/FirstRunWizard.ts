@@ -7,6 +7,7 @@ import {
 	type WorkspaceProfileTemplate,
 	type WorkspaceProfileTemplateId
 } from '@/templates/firstRunWorkspaceProfiles';
+import { voidAsync } from '@/utils/asyncUtils';
 
 interface FirstRunScaffoldOptions {
 	rootFolder: string;
@@ -109,18 +110,18 @@ export class FirstRunWizardModal extends Modal {
 
 		const actions = contentEl.createDiv({ cls: 'noesis-first-run-actions' });
 		const skipButton = actions.createEl('button', { text: 'Skip for now' });
-		skipButton.addEventListener('click', async () => {
+		skipButton.addEventListener('click', voidAsync(async () => {
 			this.plugin.settings.hasCompletedFirstRunWizard = true;
 			await this.plugin.saveSettings();
 			new Notice('First-run wizard skipped. Use command palette to reopen it anytime.');
 			this.close();
-		});
+		}));
 
 		const createButton = actions.createEl('button', {
 			text: 'Create Workspace',
 			cls: 'mod-cta'
 		});
-		createButton.addEventListener('click', async () => {
+		createButton.addEventListener('click', voidAsync(async () => {
 			createButton.disabled = true;
 			skipButton.disabled = true;
 			try {
@@ -137,7 +138,7 @@ export class FirstRunWizardModal extends Modal {
 				createButton.disabled = false;
 				skipButton.disabled = false;
 			}
-		});
+		}));
 	}
 
 	onClose(): void {

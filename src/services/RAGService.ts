@@ -9,6 +9,7 @@ import * as CRC32 from 'crc-32';
 import { SettingsManager } from './SettingsManager';
 import { LocalLLMSettings } from '../main';
 import { appendStudySignalsForIndexing } from '../utils/StudyMarkupUtils';
+import { voidAsync } from '../utils/asyncUtils';
 
 
 export interface RAGSearchResult {
@@ -583,7 +584,7 @@ export class RAGService {
 	 */
 	private async runBackgroundMaintenance(operation: MaintenanceOperation): Promise<void> {
 		// Use setTimeout to run in background without blocking
-		setTimeout(async () => {
+		setTimeout(voidAsync(async () => {
 			try {
 				const progressCallback = this.createAutoMaintenanceProgressCallback();
 
@@ -608,7 +609,7 @@ export class RAGService {
 					}
 				}
 			}
-		}, 100); // Small delay to ensure UI is ready
+		}), 100); // Small delay to ensure UI is ready
 	}
 
 	/**
@@ -1188,7 +1189,7 @@ export class RAGService {
 	 */
 	startFileWatcher(): void {
 		// Watch for file modifications
-		this.fileChangeRef = this.app.vault.on('modify', async (file) => {
+		this.fileChangeRef = this.app.vault.on('modify', (file) => {
 			if (file instanceof TFile && this.shouldIndexMarkdownFile(file) && !this.isIndexing) {
 				// Skip processing if this is the currently active file being edited
 				if (this.isFileCurrentlyActive(file)) {
@@ -1204,7 +1205,7 @@ export class RAGService {
 		});
 
 		// Watch for file renames
-		this.fileRenameRef = this.app.vault.on('rename', async (file, oldPath) => {
+		this.fileRenameRef = this.app.vault.on('rename', (file, oldPath) => {
 			if (file instanceof TFile && file.extension.toLowerCase() === 'md' && !this.isIndexing) {
 				// Renames should always be processed as they don't interfere with editing
 				this.queueFileUpdate(file, 'rename', oldPath);
@@ -1212,13 +1213,13 @@ export class RAGService {
 		});
 
 		// Watch for file deletions
-		this.fileDeleteRef = this.app.vault.on('delete', async (file) => {
+		this.fileDeleteRef = this.app.vault.on('delete', (file) => {
 			if (file instanceof TFile && file.extension.toLowerCase() === 'md' && !this.isIndexing) {
 				// Remove from pending updates if it was there
 				this.pendingActiveFileUpdates.delete(file.path);
 
 				// Process deletions immediately as they're quick and file is gone
-				setTimeout(async () => {
+				setTimeout(voidAsync(async () => {
 					try {
 						LoggingUtility.log(`File deleted: ${file.path}`);
 						await this.vectorDB.removeFileDocuments(file.path);
@@ -1226,7 +1227,7 @@ export class RAGService {
 					} catch (error) {
 						LoggingUtility.error(`Error processing file deletion: ${file.path}`, error);
 					}
-				}, 0);
+				}), 0);
 			}
 		});
 
@@ -1373,7 +1374,7 @@ export class RAGService {
 		}
 
 		// Set new timeout to process the file update after a brief delay
-		const timeout = setTimeout(async () => {
+		const timeout = setTimeout(voidAsync(async () => {
 			try {
 				this.fileUpdateQueue.delete(filePath);
 
@@ -1392,7 +1393,7 @@ export class RAGService {
 			} catch (error) {
 				LoggingUtility.error(`Error processing file update for ${filePath}:`, error);
 			}
-		}, 500); // 500ms debounce delay
+		}), 500); // 500ms debounce delay
 
 		this.fileUpdateQueue.set(filePath, timeout);
 	}

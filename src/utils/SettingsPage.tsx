@@ -17,6 +17,7 @@ import {
 	RESPONSE_TEMPLATE_PRESETS,
 	ResponseTemplatePresetId
 } from '@/utils/TemplateVariableRenderer';
+import { voidAsync } from '@/utils/asyncUtils';
 
 
 
@@ -972,10 +973,10 @@ export class SettingsPage extends PluginSettingTab
 		});
 		systemPromptTextArea.value = this.plugin.settings.systemPrompt;
 
-		systemPromptTextArea.addEventListener('input', async () => {
+		systemPromptTextArea.addEventListener('input', voidAsync(async () => {
 			this.plugin.settings.systemPrompt = systemPromptTextArea.value;
 			await this.plugin.saveSettings();
-		});
+		}, (error) => LoggingUtility.error('Failed to save system prompt setting:', error)));
 
 		//**************************** */
 		// Scaffold: response formatting settings
@@ -1040,9 +1041,11 @@ export class SettingsPage extends PluginSettingTab
 				slider.setLimits(opts.min, opts.max, opts.step)
 					.setValue(opts.value)
 					.setDynamicTooltip()
-					.onChange(async (value) => {
+					.onChange((value) => {
 						if (valueLabel) valueLabel.textContent = opts.format ? opts.format(value) : value.toString();
-						await opts.onChange(value);
+						void opts.onChange(value).catch((error) => {
+							LoggingUtility.error('Failed to update slider setting:', error);
+						});
 					});
 				slider.sliderEl.classList.add('local-llm-settings-slider');
 				// Live update label as slider moves
@@ -1282,14 +1285,14 @@ export class SettingsPage extends PluginSettingTab
 		const graphAdvancedContainer = containerEl.createDiv({ cls: 'local-llm-graph-advanced-settings' });
 		graphAdvancedContainer.style.display = graphAdvancedExpanded ? '' : 'none';
 
-		graphAdvancedToggle.addEventListener('click', async () => {
+		graphAdvancedToggle.addEventListener('click', voidAsync(async () => {
 			graphAdvancedExpanded = !graphAdvancedExpanded;
 			graphAdvancedContainer.style.display = graphAdvancedExpanded ? '' : 'none';
 			graphAdvancedToggle.setText(graphAdvancedExpanded ? 'Hide' : 'Advanced');
 			graphAdvancedToggle.setAttr('aria-expanded', graphAdvancedExpanded ? 'true' : 'false');
 			this.plugin.settings.graphRerankAdvancedExpanded = graphAdvancedExpanded;
 			await this.plugin.saveSettings();
-		});
+		}, (error) => LoggingUtility.error('Failed to update graph advanced toggle state:', error)));
 
 		addStyledSlider(
 			new Setting(graphAdvancedContainer)
@@ -1624,7 +1627,7 @@ export class SettingsPage extends PluginSettingTab
 			cls: 'mod-cta'
 		});
 
-		testButton.addEventListener('click', async () => {
+		testButton.addEventListener('click', voidAsync(async () => {
 			testButton.setText('Testing...');
 			testButton.disabled = true;
 
@@ -1664,7 +1667,7 @@ export class SettingsPage extends PluginSettingTab
 				testButton.setText('Test connection');
 				testButton.disabled = false;
 			}
-		});
+		}, (error) => LoggingUtility.error('Unexpected connection-test handler error:', error)));
 
 		// Add spacing between buttons
 		containerEl.createEl('br');

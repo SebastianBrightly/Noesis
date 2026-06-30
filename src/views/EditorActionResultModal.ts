@@ -1,4 +1,5 @@
 import { App, Modal, Notice } from 'obsidian';
+import { voidAsync } from '../utils/asyncUtils';
 
 export interface EditorActionResultModalConfig {
 	actionTitle: string;
@@ -47,7 +48,7 @@ export class EditorActionResultModal extends Modal {
 
 		closeButton.addEventListener('click', () => this.close());
 
-		saveButton.addEventListener('click', async () => {
+		saveButton.addEventListener('click', voidAsync(async () => {
 			saveButton.disabled = true;
 			applyButton.disabled = true;
 			try {
@@ -58,9 +59,9 @@ export class EditorActionResultModal extends Modal {
 				saveButton.disabled = false;
 				applyButton.disabled = false;
 			}
-		});
+		}));
 
-		applyButton.addEventListener('click', async () => {
+		applyButton.addEventListener('click', voidAsync(async () => {
 			saveButton.disabled = true;
 			applyButton.disabled = true;
 			try {
@@ -72,7 +73,7 @@ export class EditorActionResultModal extends Modal {
 				saveButton.disabled = false;
 				applyButton.disabled = false;
 			}
-		});
+		}));
 	}
 
 	onClose(): void {
