@@ -2,7 +2,9 @@ import { App, Modal, Notice, Setting, TFile } from 'obsidian';
 import LocalLLMPlugin from '@/main';
 import {
 	DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID,
+	getWorkspaceProfileStarterTags,
 	getWorkspaceProfileTemplateById,
+	mergeWorkspaceProfileStarterTags,
 	WORKSPACE_PROFILE_OPTIONS,
 	type WorkspaceProfileTemplate,
 	type WorkspaceProfileTemplateId
@@ -13,6 +15,7 @@ interface FirstRunScaffoldOptions {
 	rootFolder: string;
 	templateId: WorkspaceProfileTemplateId;
 	createTemplates: boolean;
+	createStarterTags: boolean;
 	openOverviewAfterCreate: boolean;
 }
 
@@ -28,6 +31,7 @@ export class FirstRunWizardModal extends Modal {
 	private rootFolder: string;
 	private selectedTemplateId: WorkspaceProfileTemplateId = DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID;
 	private createTemplates: boolean = true;
+	private createStarterTags: boolean = false;
 	private openOverviewAfterCreate: boolean = true;
 
 	constructor(app: App, plugin: LocalLLMPlugin) {
@@ -62,6 +66,9 @@ export class FirstRunWizardModal extends Modal {
 			previewEl.setText(this.buildStructurePreview(this.sanitizeVaultPath(this.rootFolder, template.defaultRootFolder), template));
 		};
 
+		let resetStarterTagsSelection: () => void = () => {};
+		let renderStarterTagsPreview: (visible: boolean) => void = () => {};
+
 		new Setting(contentEl)
 			.setName('Workspace profile')
 			.setDesc('Select a starter structure to scaffold in your vault.')
@@ -72,6 +79,7 @@ export class FirstRunWizardModal extends Modal {
 
 				dropdown.setValue(this.selectedTemplateId).onChange((value) => {
 					this.selectedTemplateId = value as WorkspaceProfileTemplateId;
+					resetStarterTagsSelection();
 					renderTemplatePreview();
 				});
 			});
@@ -97,7 +105,38 @@ export class FirstRunWizardModal extends Modal {
 				toggle.setValue(this.createTemplates).onChange((value) => {
 					this.createTemplates = value;
 				});
+				});
+
+		new Setting(contentEl)
+				.setName('Create starter tags')
+				.setDesc('Adds the selected profile template tags to the Auto Tag dictionary.')
+			.addToggle((toggle) => {
+				toggle.setValue(this.createStarterTags).onChange((value) => {
+					this.createStarterTags = value;
+					renderStarterTagsPreview(value);
+				});
+				resetStarterTagsSelection = () => {
+					this.createStarterTags = false;
+					toggle.setValue(false);
+					renderStarterTagsPreview(false);
+				};
 			});
+
+		const starterTagsPreviewEl = contentEl.createEl('p', {
+			cls: 'noesis-first-run-tag-preview'
+		});
+		starterTagsPreviewEl.style.display = 'none';
+		renderStarterTagsPreview = (visible: boolean) => {
+			if (!visible) {
+				starterTagsPreviewEl.setText('');
+				starterTagsPreviewEl.style.display = 'none';
+				return;
+			}
+
+			const tags = getWorkspaceProfileStarterTags(this.selectedTemplateId);
+			starterTagsPreviewEl.setText(`Tags to add (existing tags will be skipped): ${tags.join(', ')}`);
+			starterTagsPreviewEl.style.display = '';
+		};
 
 		new Setting(contentEl)
 			.setName('Open overview after setup')
@@ -129,6 +168,7 @@ export class FirstRunWizardModal extends Modal {
 					rootFolder: this.rootFolder,
 					templateId: this.selectedTemplateId,
 					createTemplates: this.createTemplates,
+					createStarterTags: this.createStarterTags,
 					openOverviewAfterCreate: this.openOverviewAfterCreate
 				});
 				new Notice(`Workspace created: ${summary.rootFolder} (${summary.createdFolders} folders, ${summary.createdFiles} files)`);
@@ -286,9 +326,20 @@ export class FirstRunWizardModal extends Modal {
 			}
 		}
 
+		let starterTagsAdded = false;
+		if (options.createStarterTags) {
+			const existingTags = this.plugin.settings.autoTagDictionary ?? [];
+			const updatedTags = mergeWorkspaceProfileStarterTags(existingTags, options.templateId);
+			starterTagsAdded = updatedTags.length > existingTags.length;
+			this.plugin.settings.autoTagDictionary = updatedTags;
+		}
+
 		this.plugin.settings.hasCompletedFirstRunWizard = true;
 		this.plugin.settings.researchWorkspaceRoot = root;
 		await this.plugin.saveSettings();
+		if (starterTagsAdded) {
+			this.plugin.refreshAutoTagSettingsPanel?.();
+		}
 
 		if (options.openOverviewAfterCreate) {
 			const candidatePaths = new Set<string>(['wiki/overview.md', 'overview.md', 'README.md']);

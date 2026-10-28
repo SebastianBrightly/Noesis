@@ -833,7 +833,7 @@ class FolderAutoTagConfirmationModal extends Modal {
 		});
 		recursiveScopeLabel.appendText(` Include subfolders (${this.options.recursiveNoteCount} note(s))`);
 
-		const actions = contentEl.createDiv({ cls: 'local-llm-editor-result-actions' });
+		const actions = contentEl.createDiv({ cls: 'local-llm-editor-result-actions local-llm-folder-auto-tag-actions' });
 
 		const cancelButton = actions.createEl('button', {
 			text: 'Do not proceed',

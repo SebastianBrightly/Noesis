@@ -45,4 +45,54 @@ export function getWorkspaceProfileTemplateById(templateId: WorkspaceProfileTemp
 	return workspaceProfileTemplates[templateId] ?? workspaceProfileTemplates[DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID];
 }
 
+export function getWorkspaceProfileStarterTags(templateId: WorkspaceProfileTemplateId): string[] {
+	const template = getWorkspaceProfileTemplateById(templateId);
+	const folderNames = new Set(template.folders.flatMap((folder) => folder.split('/')));
+	const tags = new Set<string>();
+
+	for (const file of template.templateFiles) {
+		const frontmatter = file.content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1];
+		const tagLines = frontmatter?.match(/^tags:\r?\n((?:[ \t]+-[ \t]+[^\r\n]*\r?\n?)*)/m)?.[1] ?? '';
+
+		for (const match of tagLines.matchAll(/^[ \t]+-[ \t]+(.+?)\s*$/gm)) {
+			const baseTag = match[1].trim().split('/').pop() ?? '';
+			const pluralTag = /[^aeiou]y$/.test(baseTag)
+				? `${baseTag.slice(0, -1)}ies`
+				: /(?:s|x|z|ch|sh)$/.test(baseTag)
+					? `${baseTag}es`
+					: `${baseTag}s`;
+			const tag = folderNames.has(baseTag)
+				? baseTag
+				: folderNames.has(pluralTag)
+					? pluralTag
+					: baseTag;
+			if (tag) {
+				tags.add(tag);
+			}
+		}
+	}
+
+	return [...tags];
+}
+
+export function mergeWorkspaceProfileStarterTags(
+	existingTags: string[],
+	templateId: WorkspaceProfileTemplateId
+): string[] {
+	const mergedTags = [...existingTags];
+	const seenTags = new Set(existingTags.map((tag) => tag.trim().toLowerCase().replace(/\//g, '-')));
+
+	for (const tag of getWorkspaceProfileStarterTags(templateId)) {
+		const normalizedTag = tag.trim().toLowerCase().replace(/\//g, '-');
+		if (!normalizedTag || seenTags.has(normalizedTag)) {
+			continue;
+		}
+
+		seenTags.add(normalizedTag);
+		mergedTags.push(tag);
+	}
+
+	return mergedTags;
+}
+
 export type { WorkspaceProfileTemplate, WorkspaceProfileTemplateId } from './types';
