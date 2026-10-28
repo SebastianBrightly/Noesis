@@ -143,6 +143,7 @@ export interface LocalLLMSettings {
 	responseNoteTemplate?: string;
 	autoTagDictionary?: string[];
 	autoTagWorkload?: 'small' | 'medium' | 'large';
+	autoTagActiveTagsEnabled?: boolean;
 	autoTagConnectionId?: string;
 	multiAIConnections?: AIConnectionConfig[];
 	activeAIConnectionId?: string;
@@ -213,6 +214,7 @@ export const DEFAULT_SETTINGS: LocalLLMSettings = {
 	responseNoteTemplate: DEFAULT_RESPONSE_NOTE_TEMPLATE,
 	autoTagDictionary: [],
 	autoTagWorkload: 'medium',
+	autoTagActiveTagsEnabled: false,
 	autoTagConnectionId: undefined,
 	multiAIConnections: [],
 	activeAIConnectionId: undefined
@@ -225,6 +227,7 @@ const REVIEW_PROMPT_MESSAGE = 'Enjoying Noesis? A quick review helps others disc
 
 export default class LocalLLMPlugin extends Plugin {
 	settings: LocalLLMSettings;
+	refreshAutoTagSettingsPanel?: () => void;
 	ragService: RAGService; 
 	public llmService: LLMService; // LLMService instance for image processing
 	private usageTrackingIntervalId: number | null = null;
@@ -562,6 +565,11 @@ export default class LocalLLMPlugin extends Plugin {
 
 		if (this.settings.autoTagWorkload !== 'small' && this.settings.autoTagWorkload !== 'medium' && this.settings.autoTagWorkload !== 'large') {
 			this.settings.autoTagWorkload = DEFAULT_SETTINGS.autoTagWorkload;
+			needsMigrationSave = true;
+		}
+
+		if (typeof this.settings.autoTagActiveTagsEnabled !== 'boolean') {
+			this.settings.autoTagActiveTagsEnabled = DEFAULT_SETTINGS.autoTagActiveTagsEnabled;
 			needsMigrationSave = true;
 		}
 

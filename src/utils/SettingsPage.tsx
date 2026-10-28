@@ -1,6 +1,6 @@
 import LocalLLMPlugin from "@/main";
 import  { ContextMode, PersonalityMode,PersonalityTrait, CHAT_VIEW_TYPE, AIConnectionConfig, LocalLLMSettings } from "@/main";
-import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Notice, DropdownComponent  } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Notice, DropdownComponent, Modal  } from "obsidian";
 import React from "react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import { createPluginRoot } from "@/ReactView";
@@ -23,13 +23,107 @@ import { voidAsync } from '@/utils/asyncUtils';
 
 
 
+class EmbeddingMaxInputTokensHelpModal extends Modal {
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('local-llm-embedding-help-modal');
+
+		contentEl.createEl('h2', { text: 'Embedding max input tokens' });
+		contentEl.createEl('p', {
+			text: 'This value is a safety limit Noesis uses before sending text for embeddings. The server can still reject a request if its true tokenizer count is higher than estimated.'
+		});
+		contentEl.createEl('p', {
+			text: 'If you see errors like "input is too large" or "physical batch size", lower this value to leave headroom.'
+		});
+
+		const suggestions = contentEl.createEl('ul');
+		suggestions.createEl('li', { text: 'Start at 384 for most setups.' });
+		suggestions.createEl('li', { text: 'Use 320 if errors continue.' });
+		suggestions.createEl('li', { text: 'Use 256 on stricter or unstable servers.' });
+
+		contentEl.createEl('p', {
+			text: 'If your server supports larger physical micro-batches, you can also increase server batch/ubatch and then raise this value.'
+		});
+
+		const actions = contentEl.createDiv({ cls: 'local-llm-embedding-help-actions' });
+		const closeButton = actions.createEl('button', {
+			text: 'Close',
+			cls: 'mod-cta',
+			attr: { type: 'button' }
+		});
+		closeButton.addEventListener('click', () => this.close());
+	}
+
+	onClose(): void {
+		this.contentEl.empty();
+	}
+}
+
+class EmbeddingChunkOverlapHelpModal extends Modal {
+	constructor(app: App, private readonly maxInputTokens: number, private readonly currentOverlapTokens: number) {
+		super(app);
+	}
+
+	onOpen(): void {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('local-llm-embedding-help-modal');
+
+		const maxInputTokens = Number.isFinite(this.maxInputTokens) && this.maxInputTokens > 0
+			? this.maxInputTokens
+			: 512;
+		const currentOverlapTokens = Number.isFinite(this.currentOverlapTokens) && this.currentOverlapTokens >= 0
+			? this.currentOverlapTokens
+			: 20;
+		const suggestion = (percentage: number) => Math.max(1, Math.round(maxInputTokens * percentage));
+
+		contentEl.createEl('h2', { text: 'Embedding chunk overlap tokens' });
+		contentEl.createEl('p', {
+			text: 'Overlap repeats a little text at the start of each new chunk. This helps keep ideas connected when a note is split into pieces.'
+		});
+		contentEl.createEl('p', {
+			text: `Your max input setting is ${maxInputTokens} tokens, and your current overlap is ${currentOverlapTokens}. As a starting point, keep overlap small compared with the max input:`
+		});
+
+		const suggestions = contentEl.createEl('ul');
+		suggestions.createEl('li', {
+			text: `Light — about 5% (${suggestion(0.05)} tokens): less repeated text and quicker indexing.`
+		});
+		suggestions.createEl('li', {
+			text: `Balanced — about 10% (${suggestion(0.1)} tokens): a good starting point for most notes.`
+		});
+		suggestions.createEl('li', {
+			text: `More context — about 15% (${suggestion(0.15)} tokens): may help when ideas often cross chunk boundaries, but repeats more text.`
+		});
+
+		contentEl.createEl('p', {
+			text: 'These are guidelines, not strict limits. More overlap is not always better; it can create extra repeated content during indexing.'
+		});
+
+		const actions = contentEl.createDiv({ cls: 'local-llm-embedding-help-actions' });
+		const closeButton = actions.createEl('button', {
+			text: 'Close',
+			cls: 'mod-cta',
+			attr: { type: 'button' }
+		});
+		closeButton.addEventListener('click', () => this.close());
+	}
+
+	onClose(): void {
+		this.contentEl.empty();
+	}
+}
+
 export class SettingsPage extends PluginSettingTab 
 {
     plugin: LocalLLMPlugin;
 
     constructor(app: App, plugin: LocalLLMPlugin) {
         super(app, plugin);
-        this.plugin = plugin;}
+        this.plugin = plugin;
+		this.plugin.refreshAutoTagSettingsPanel = () => this.refreshAutoTagTabPanel();
+	}
 
 	// Guard to avoid recursive programmatic updates
 	private _updatingPersonality: boolean = false;
@@ -96,7 +190,7 @@ export class SettingsPage extends PluginSettingTab
 	private visualizeSettings_AutoTag(containerEl: HTMLElement, LocalLLMSettings: LocalLLMSettings): void {
 		new Setting(containerEl).setName('Auto Tag').setHeading();
 
-		new Setting(containerEl)
+		const dictionarySetting = new Setting(containerEl)
 			.setName('User-defined tag dictionary')
 			.setDesc('One tag per line. Auto Tag will still generate tags, but will prefer adding relevant tags from this dictionary when appropriate.')
 			.addTextArea(text => text
@@ -111,7 +205,7 @@ export class SettingsPage extends PluginSettingTab
 					this.plugin.settings.autoTagDictionary = this.parseMultilineList(value);
 					await this.plugin.saveSettings();
 				}));
-
+		dictionarySetting.settingEl.addClass('local-llm-auto-tag-dictionary-setting');		
 		new Setting(containerEl)
 			.setName('Auto tag workload')
 			.setDesc('Controls how many notes are processed per chunk during folder auto-tag runs.')
@@ -128,6 +222,62 @@ export class SettingsPage extends PluginSettingTab
 					this.plugin.settings.autoTagWorkload = value;
 					await this.plugin.saveSettings();
 				}));
+
+		const activeTagsEl = containerEl.createDiv({ cls: 'local-llm-active-tags' });
+		const renderActiveTags = (enabled: boolean): void => {
+			activeTagsEl.empty();
+			if (!enabled) {
+				activeTagsEl.createEl('p', {
+					cls: 'local-llm-active-tags-description',
+					text: 'Enable this option to see an alphabetical list of tags used in the vault. Only tags from the frontmatter Tags property are included; inline tags are not.'
+				});
+				return;
+			}
+
+			const tags = new Map<string, string>();
+			for (const file of this.app.vault.getMarkdownFiles()) {
+				const value = this.app.metadataCache.getFileCache(file)?.frontmatter?.tags;
+				const values = Array.isArray(value) ? value : [value];
+				for (const entry of values) {
+					if (typeof entry !== 'string') {
+						continue;
+					}
+
+					const tag = entry.trim().replace(/^#+/, '').trim();
+					if (tag.length > 0 && !tags.has(tag.toLocaleLowerCase())) {
+						tags.set(tag.toLocaleLowerCase(), tag);
+					}
+				}
+			}
+
+			const sortedTags = Array.from(tags.values()).sort((a, b) =>
+				a.localeCompare(b, undefined, { sensitivity: 'base' }) || a.localeCompare(b)
+			);
+			if (sortedTags.length === 0) {
+				activeTagsEl.createEl('p', {
+					cls: 'local-llm-active-tags-description',
+					text: 'No tags were found in frontmatter Tags properties.'
+				});
+				return;
+			}
+
+			const tagList = activeTagsEl.createEl('ul', { cls: 'local-llm-active-tags-list' });
+			for (const tag of sortedTags) {
+				tagList.createEl('li', { text: tag });
+			}
+		};
+
+		new Setting(containerEl)
+			.setName('Active tags')
+			.setDesc('Show tags currently used in the vault.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoTagActiveTagsEnabled ?? false)
+				.onChange(async (enabled) => {
+					this.plugin.settings.autoTagActiveTagsEnabled = enabled;
+					await this.plugin.saveSettings();
+					renderActiveTags(enabled);
+				}));
+		renderActiveTags(this.plugin.settings.autoTagActiveTagsEnabled ?? false);
 
 		const availableConnections = (this.plugin.settings.multiAIConnections || []).filter(conn => !conn.isSleeping);
 		if (availableConnections.length > 0) {
@@ -1432,7 +1582,7 @@ export class SettingsPage extends PluginSettingTab
 		}, 0);
 
 		// Embedding chunking settings
-		new Setting(containerEl)
+		const embeddingMaxInputTokensSetting = new Setting(containerEl)
 			.setName('Embedding max input tokens')
 			.setDesc('Maximum tokens per embedding input. Texts longer than this will be chunked client-side.')
 			.addText(text => text
@@ -1444,7 +1594,21 @@ export class SettingsPage extends PluginSettingTab
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
+		embeddingMaxInputTokensSetting.nameEl.addClass('local-llm-setting-name-with-help');
+		const embeddingTokenHelpButton = embeddingMaxInputTokensSetting.nameEl.createEl('button', {
+			text: '?',
+			cls: 'local-llm-help-link',
+			attr: {
+				type: 'button',
+				'aria-label': 'Learn how to tune embedding max input tokens'
+			}
+		});
+		embeddingTokenHelpButton.setAttr('title', 'Why this value matters');
+		embeddingTokenHelpButton.addEventListener('click', () => {
+			new EmbeddingMaxInputTokensHelpModal(this.app).open();
+		});
+
+		const embeddingChunkOverlapSetting = new Setting(containerEl)
 			.setName('Embedding chunk overlap tokens')
 			.setDesc('Number of tokens to overlap between adjacent chunks when chunking long texts.')
 			.addText(text => text
@@ -1455,6 +1619,24 @@ export class SettingsPage extends PluginSettingTab
 					this.plugin.settings.embeddingChunkOverlapTokens = parsed;
 					await this.plugin.saveSettings();
 				}));
+
+		embeddingChunkOverlapSetting.nameEl.addClass('local-llm-setting-name-with-help');
+		const embeddingOverlapHelpButton = embeddingChunkOverlapSetting.nameEl.createEl('button', {
+			text: '?',
+			cls: 'local-llm-help-link',
+			attr: {
+				type: 'button',
+				'aria-label': 'Learn how to tune embedding chunk overlap tokens'
+			}
+		});
+		embeddingOverlapHelpButton.setAttr('title', 'How much overlap should I use?');
+		embeddingOverlapHelpButton.addEventListener('click', () => {
+			new EmbeddingChunkOverlapHelpModal(
+				this.app,
+				this.plugin.settings.embeddingMaxInputTokens ?? 512,
+				this.plugin.settings.embeddingChunkOverlapTokens ?? 20
+			).open();
+		});
 
 		new Setting(containerEl)
 			.setName('Chunk combine strategy')
