@@ -708,7 +708,7 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				const labelEl = slider.sliderEl.ownerDocument.createEl('span');
 				labelEl.className = 'local-llm-slider-value';
 				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
 				slider.sliderEl.parentElement?.appendChild(labelEl);
@@ -742,7 +742,7 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				const labelEl = slider.sliderEl.ownerDocument.createEl('span');
 				labelEl.className = 'local-llm-slider-value';
 				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
 				slider.sliderEl.parentElement?.appendChild(labelEl);
@@ -1201,7 +1201,7 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				const labelEl = slider.sliderEl.ownerDocument.createEl('span');
 				labelEl.className = 'local-llm-slider-value';
 				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
 				slider.sliderEl.parentElement?.appendChild(labelEl);
@@ -1275,7 +1275,7 @@ export class SettingsPage extends PluginSettingTab
 					const val = parseFloat((e.target as HTMLInputElement).value);
 					if (valueLabel) valueLabel.textContent = opts.format ? opts.format(val) : val.toString();
 				});
-				const labelEl = slider.sliderEl.ownerDocument.createElement('span');
+				const labelEl = slider.sliderEl.ownerDocument.createEl('span');
 				labelEl.className = 'local-llm-slider-value';
 				labelEl.textContent = opts.format ? opts.format(opts.value) : opts.value.toString();
 				slider.sliderEl.parentElement?.appendChild(labelEl);

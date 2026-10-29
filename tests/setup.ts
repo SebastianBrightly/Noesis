@@ -4,7 +4,7 @@ Object.assign(globalThis, { __requestUrlMock: requestUrlMock });
 
 Object.defineProperty(HTMLElement.prototype, 'createEl', {
   value(this: HTMLElement, tag: string, options?: { cls?: string; text?: string; attr?: Record<string, string> }) {
-    const el = document.createElement(tag);
+    const el = document.createEl(tag);
     if (options?.cls) {
       el.className = options.cls;
     }

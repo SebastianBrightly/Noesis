@@ -36,7 +36,7 @@ export class PluginSettingTab {
   constructor(app: any, plugin: any) {
     this.app = app;
     this.plugin = plugin;
-    this.containerEl = document.createElement('div');
+    this.containerEl = document.createEl('div');
   }
 }
 
@@ -46,11 +46,11 @@ export class Setting {
   setDesc() { return this; }
   setHeading() { return this; }
   addDropdown(cb: (dropdown: any) => void) {
-    cb(new DropdownComponent(document.createElement('div')));
+    cb(new DropdownComponent(document.createEl('div')));
     return this;
   }
   addSlider(cb: (slider: any) => void) {
-    const sliderEl = document.createElement('input');
+    const sliderEl = document.createEl('input');
     sliderEl.type = 'range';
     cb({
       sliderEl,
@@ -84,9 +84,9 @@ export class ItemView {
   constructor(leaf: any) {
     this.leaf = leaf;
     this.app = leaf.app;
-    this.containerEl = document.createElement('div');
-    this.containerEl.appendChild(document.createElement('div'));
-    this.containerEl.appendChild(document.createElement('div'));
+    this.containerEl = document.createEl('div');
+    this.containerEl.appendChild(document.createEl('div'));
+    this.containerEl.appendChild(document.createEl('div'));
   }
 
   registerEvent(eventRef: any) {
@@ -100,7 +100,7 @@ export class DropdownComponent {
   private onChangeHandler?: (value: string) => void;
 
   constructor(containerEl: HTMLElement) {
-    this.selectEl = document.createElement('select');
+    this.selectEl = document.createEl('select');
     containerEl.appendChild(this.selectEl);
     this.selectEl.addEventListener('change', () => {
       this.onChangeHandler?.(this.selectEl.value);
@@ -108,7 +108,7 @@ export class DropdownComponent {
   }
 
   addOption(value: string, label: string) {
-    const opt = document.createElement('option');
+    const opt = document.createEl('option');
     opt.value = value;
     opt.textContent = label;
     this.selectEl.appendChild(opt);
@@ -154,7 +154,7 @@ export class Modal {
 
   constructor(app: any) {
     this.app = app;
-    this.contentEl = document.createElement('div');
+    this.contentEl = document.createEl('div');
   }
 
   open() {

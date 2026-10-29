@@ -11,14 +11,27 @@ import type {
 	WorkspaceProfileTemplateId
 } from './types';
 
+type WorkspaceProfileTemplateData = Omit<WorkspaceProfileTemplate, 'id'> & { id: string };
+
+function validateWorkspaceProfileTemplate(
+	expectedId: WorkspaceProfileTemplateId,
+	template: WorkspaceProfileTemplateData
+): WorkspaceProfileTemplate {
+	if (template.id !== expectedId) {
+		throw new Error(`Workspace profile template ID mismatch: expected "${expectedId}", found "${template.id}".`);
+	}
+
+	return { ...template, id: expectedId };
+}
+
 const workspaceProfileTemplates: Record<WorkspaceProfileTemplateId, WorkspaceProfileTemplate> = {
-	'personal-cognitive': personalCognitive as WorkspaceProfileTemplate,
-	'professional-operational': professionalOperational as WorkspaceProfileTemplate,
-	'academic-research-analysis': academicResearchAnalysis as WorkspaceProfileTemplate,
-	'karpathy-blank-start': karpathyBlankStart as WorkspaceProfileTemplate,
-	'health-medical': healthMedical as WorkspaceProfileTemplate,
-	financial: financial as WorkspaceProfileTemplate,
-	'content-creative': contentCreative as WorkspaceProfileTemplate
+	'personal-cognitive': validateWorkspaceProfileTemplate('personal-cognitive', personalCognitive),
+	'professional-operational': validateWorkspaceProfileTemplate('professional-operational', professionalOperational),
+	'academic-research-analysis': validateWorkspaceProfileTemplate('academic-research-analysis', academicResearchAnalysis),
+	'karpathy-blank-start': validateWorkspaceProfileTemplate('karpathy-blank-start', karpathyBlankStart),
+	'health-medical': validateWorkspaceProfileTemplate('health-medical', healthMedical),
+	financial: validateWorkspaceProfileTemplate('financial', financial),
+	'content-creative': validateWorkspaceProfileTemplate('content-creative', contentCreative)
 };
 
 export const DEFAULT_WORKSPACE_PROFILE_TEMPLATE_ID: WorkspaceProfileTemplateId = 'academic-research-analysis';

@@ -392,7 +392,7 @@ export class EditorNativeActionsService {
 		}
 
 		const activeDocument = hostEl.ownerDocument;
-		const indicator = activeDocument.createElement('div');
+		const indicator = activeDocument.createEl('div');
 		indicator.className = 'local-llm-editor-action-indicator';
 		indicator.setAttribute('role', 'status');
 		indicator.setAttribute('aria-live', 'polite');
