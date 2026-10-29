@@ -1569,6 +1569,10 @@ body > .rag-progress-floating-dialog {
 	overflow-wrap: anywhere;
 }
 
+.noesis-first-run-tag-preview-hidden {
+	display: none;
+}
+
 .noesis-first-run-actions {
 	display: flex;
 	justify-content: flex-end;
