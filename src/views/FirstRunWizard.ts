@@ -125,17 +125,17 @@ export class FirstRunWizardModal extends Modal {
 		const starterTagsPreviewEl = contentEl.createEl('p', {
 			cls: 'noesis-first-run-tag-preview'
 		});
-		starterTagsPreviewEl.style.display = 'none';
+		starterTagsPreviewEl.classList.add('noesis-first-run-tag-preview-hidden');
 		renderStarterTagsPreview = (visible: boolean) => {
 			if (!visible) {
 				starterTagsPreviewEl.setText('');
-				starterTagsPreviewEl.style.display = 'none';
+				starterTagsPreviewEl.classList.add('noesis-first-run-tag-preview-hidden');
 				return;
 			}
 
 			const tags = getWorkspaceProfileStarterTags(this.selectedTemplateId);
 			starterTagsPreviewEl.setText(`Tags to add (existing tags will be skipped): ${tags.join(', ')}`);
-			starterTagsPreviewEl.style.display = '';
+			starterTagsPreviewEl.classList.remove('noesis-first-run-tag-preview-hidden');
 		};
 
 		new Setting(contentEl)
